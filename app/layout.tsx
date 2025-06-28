@@ -19,6 +19,10 @@ import {
 import { dark } from '@clerk/themes'
 import AuthPage from "./auth-page";
 
+import React from "react";
+import {Divider} from "@heroui/react";
+import Footer from "./footer";
+
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
@@ -76,6 +80,7 @@ export default function RootLayout({
           </Providers>
         </body>
       </html>
+      <Footer />
     </ClerkProvider>  
   );
 }

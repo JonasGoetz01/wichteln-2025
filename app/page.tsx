@@ -27,10 +27,10 @@ export default async function Home() {
       <Card>
         <CardBody className="p-6">
           <h1 className="text-2xl font-bold mb-2">
-            Hello {user.firstName || 'User'}! 👋
+            Hallo {user.firstName || 'User'}! 👋
           </h1>
           <p className="text-default-500">
-            Welcome to your dashboard. Here you can see all registered users.
+            Willkommen zur Wichtelaktion des Burghadt Gymnasiums Buchen. Hier kannst du deinen zugewiesenen Wichtel finden und alle Informationen zu der Wichtelaktion erhalten.
           </p>
         </CardBody>
       </Card>
