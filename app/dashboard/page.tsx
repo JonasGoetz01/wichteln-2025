@@ -29,7 +29,7 @@ export default async function Dashboard() {
           Welcome back, {user.firstName || 'User'}!
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Here's your dashboard with data from NeonDB via Prisma ORM.
+          Here&apos;s your dashboard with data from NeonDB via Prisma ORM.
         </p>
       </div>
 
