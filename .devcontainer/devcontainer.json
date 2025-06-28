@@ -1,6 +1,6 @@
 // See https://containers.dev/implementors/json_reference/ for configuration reference
 {
-	"name": "coalition_leaderboard",
+	"name": "nextjs-devcontainer",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspace",

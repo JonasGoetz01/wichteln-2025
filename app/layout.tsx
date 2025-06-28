@@ -1,54 +1,76 @@
+import "@/styles/globals.css";
+import { Metadata, Viewport } from "next";
+import clsx from "clsx";
+
+import { Providers } from "./providers";
+
+import { siteConfig } from "@/config/site";
+import { fontSans } from "@/config/fonts";
+import { Navbar } from "@/components/navbar";
+
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from '@vercel/speed-insights/next';
+
 import {
   ClerkProvider,
   SignedIn,
   SignedOut,
 } from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { Providers } from './providers'
-import AuthPage from './auth-page'
-import './globals.css'
-import AppNavbar from "./navbar";
+import AuthPage from "./auth-page";
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
+export const metadata: Metadata = {
+  title: {
+    default: siteConfig.name,
+    template: `%s - ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  return (
+}: {
+  children: React.ReactNode;
+}) {
+  return (  
     <ClerkProvider>
-      <html lang="en" className="dark">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <Providers>
-            <SignedOut>
-              <AuthPage />
-            </SignedOut>
-            
-            <SignedIn>
-              <div className="min-h-screen bg-background">
-                <AppNavbar />
-                <main className="container mx-auto px-6 py-8 max-w-7xl">
+      <html suppressHydrationWarning lang="en">
+        <head />
+        <body
+          className={clsx(
+            "min-h-screen text-foreground bg-background font-sans antialiased",
+            fontSans.variable,
+          )}
+        >
+          <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+            <div className="relative flex flex-col h-screen">
+              <SignedOut>
+                <AuthPage />
+              </SignedOut>
+              
+              <SignedIn>
+                <Navbar />
+                <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
                   {children}
                 </main>
-              </div>
-            </SignedIn>
-          
-            <Analytics />
-            <SpeedInsights />
+                <footer className="w-full flex items-center justify-center py-3">
+                </footer>
+              </SignedIn>
+              <Analytics />
+              <SpeedInsights />
+            </div>
           </Providers>
         </body>
       </html>
-    </ClerkProvider>
-  )
+    </ClerkProvider>  
+  );
 }
