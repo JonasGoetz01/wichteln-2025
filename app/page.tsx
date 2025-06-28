@@ -1,18 +1,7 @@
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell
-} from "@heroui/table";
-import {
   Card,
   CardBody,
-  CardHeader
 } from "@heroui/card";
-import { Avatar } from "@heroui/avatar";
-import { Chip } from "@heroui/chip";
 
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
