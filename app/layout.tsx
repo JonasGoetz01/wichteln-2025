@@ -16,6 +16,7 @@ import {
   SignedIn,
   SignedOut,
 } from '@clerk/nextjs'
+import { dark } from '@clerk/themes'
 import AuthPage from "./auth-page";
 
 export const metadata: Metadata = {
@@ -42,7 +43,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (  
-    <ClerkProvider>
+    <ClerkProvider 
+      appearance={{
+        baseTheme: dark,
+      }}
+    >
       <html suppressHydrationWarning lang="en">
         <head />
         <body
