@@ -1,5 +1,6 @@
 import { currentUser } from '@clerk/nextjs/server'
 import { db } from './db'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 export const getCurrentUser = async () => {
   const user = await currentUser()
@@ -27,9 +28,13 @@ export const getCurrentUser = async () => {
     })
 
     return dbUser
-  } catch (error: any) {
+  } catch (error) {
     // Handle unique constraint error on email
-    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+    if (error instanceof PrismaClientKnownRequestError && 
+        error.code === 'P2002' && 
+        error.meta?.target && 
+        Array.isArray(error.meta.target) && 
+        error.meta.target.includes('email')) {
       // Check if there's an existing user with this email
       const existingUser = await db.user.findUnique({
         where: { email }
