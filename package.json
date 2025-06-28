@@ -16,9 +16,13 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.23.1",
+    "@heroicons/react": "^2.2.0",
+    "@heroui/react": "^2.7.11",
+    "@heroui/theme": "^2.4.17",
     "@prisma/client": "^6.10.1",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
+    "framer-motion": "^12.19.2",
     "next": "15.3.4",
     "prisma": "^6.10.1",
     "react": "^19.0.0",

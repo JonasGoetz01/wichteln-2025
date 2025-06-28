@@ -2,14 +2,14 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import {
   ClerkProvider,
-  SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Providers } from './providers'
+import AuthPage from './auth-page'
 import './globals.css'
+import AppNavbar from "./navbar";
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -28,46 +28,25 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className="dark:bg-gray-900">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-white`}>
-          <SignedOut>
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-              <div className="max-w-md w-full space-y-8 p-8">
-                <div className="text-center">
-                  <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-                    Welcome to Our App
-                  </h2>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    Please sign in to continue
-                  </p>
-                </div>
-                <div className="mt-8 space-y-4">
-                  <SignInButton mode="modal">
-                    <button className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900">
-                      Sign In
-                    </button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <button className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-900">
-                      Sign Up
-                    </button>
-                  </SignUpButton>
-                </div>
+      <html lang="en" className="dark">
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <Providers>
+            <SignedOut>
+              <AuthPage />
+            </SignedOut>
+            
+            <SignedIn>
+              <div className="min-h-screen bg-background">
+                <AppNavbar />
+                <main className="container mx-auto px-6 py-8 max-w-7xl">
+                  {children}
+                </main>
               </div>
-            </div>
-          </SignedOut>
+            </SignedIn>
           
-          <SignedIn>
-            <header className="flex justify-end items-center p-4 gap-4 h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-              <UserButton />
-            </header>
-            <div className="bg-white dark:bg-gray-900 min-h-screen">
-              {children}
-            </div>
-          </SignedIn>
-          
-          <Analytics />
-          <SpeedInsights />
+            <Analytics />
+            <SpeedInsights />
+          </Providers>
         </body>
       </html>
     </ClerkProvider>
