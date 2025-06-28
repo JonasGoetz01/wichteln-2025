@@ -1,6 +1,5 @@
 import { currentUser } from '@clerk/nextjs/server'
 import { db } from './db'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 export const getCurrentUser = async () => {
   const user = await currentUser()
@@ -8,17 +7,49 @@ export const getCurrentUser = async () => {
 
   const email = user.emailAddresses[0]?.emailAddress || ''
 
-  try {
-    // Try to sync Clerk user with database
-    const dbUser = await db.user.upsert({
+  // First, check if user exists by clerkId
+  let existingUser = await db.user.findUnique({
+    where: { clerkId: user.id }
+  })
+
+  if (existingUser) {
+    // User exists by clerkId, just update their info
+    const updatedUser = await db.user.update({
       where: { clerkId: user.id },
-      update: {
+      data: {
         email,
         firstName: user.firstName,
         lastName: user.lastName,
         imageUrl: user.imageUrl,
       },
-      create: {
+    })
+    return updatedUser
+  }
+
+  // User doesn't exist by clerkId, check if email already exists
+  existingUser = await db.user.findUnique({
+    where: { email }
+  })
+
+  if (existingUser) {
+    // Email exists with different clerkId, update the clerkId
+    console.log('Email exists with different clerkId, updating...')
+    const updatedUser = await db.user.update({
+      where: { email },
+      data: {
+        clerkId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        imageUrl: user.imageUrl,
+      },
+    })
+    return updatedUser
+  }
+
+  // No existing user, create new one
+  try {
+    const newUser = await db.user.create({
+      data: {
         clerkId: user.id,
         email,
         firstName: user.firstName,
@@ -26,36 +57,9 @@ export const getCurrentUser = async () => {
         imageUrl: user.imageUrl,
       },
     })
-
-    return dbUser
+    return newUser
   } catch (error) {
-    // Handle unique constraint error on email
-    if (error instanceof PrismaClientKnownRequestError && 
-        error.code === 'P2002' && 
-        error.meta?.target && 
-        Array.isArray(error.meta.target) && 
-        error.meta.target.includes('email')) {
-      // Check if there's an existing user with this email
-      const existingUser = await db.user.findUnique({
-        where: { email }
-      })
-
-      if (existingUser) {
-        // Update the existing user's clerkId and other fields
-        const updatedUser = await db.user.update({
-          where: { email },
-          data: {
-            clerkId: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            imageUrl: user.imageUrl,
-          },
-        })
-        return updatedUser
-      }
-    }
-    
-    // Re-throw the error if it's not the email uniqueness issue we can handle
+    console.error('Error creating new user:', error)
     throw error
   }
 } 
