@@ -16,12 +16,38 @@ model User {
   firstName   String?
   lastName    String?
   imageUrl    String?
+  role        UserRole       @default(PARTICIPANT)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   participant Participant?
 
   @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  PARTICIPANT
+}
+
+model Event {
+  id                    String      @id @default(cuid())
+  name                  String
+  description           String?
+  registrationDeadline  DateTime
+  assignmentDate        DateTime
+  giftDeadline          DateTime
+  deliveryDate          DateTime
+  isActive              Boolean     @default(true)
+  isRegistrationOpen    Boolean     @default(true)
+  areAssignmentsCreated Boolean     @default(false)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  participants Participant[]
+  assignments  Assignment[]
+
+  @@map("events")
 }
 
 model Class {
@@ -36,15 +62,74 @@ model Class {
 }
 
 model Participant {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  classId   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String              @id @default(cuid())
+  userId      String              @unique
+  eventId     String
+  classId     String?
+  interests   String?             // JSON string for gift interests/wishlist
+  status      ParticipantStatus   @default(REGISTERED)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class  Class? @relation(fields: [classId], references: [id], onDelete: SetNull)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event              Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  class              Class?       @relation(fields: [classId], references: [id], onDelete: SetNull)
+  
+  // Assignment relationships
+  givingAssignment   Assignment?  @relation("GiverAssignments")
+  receivingAssignment Assignment? @relation("ReceiverAssignments")
+  
+  // Present tracking
+  presentGiven       Present?     @relation("PresentGiver")
+  presentReceived    Present?     @relation("PresentReceiver")
 
   @@map("participants")
+}
+
+enum ParticipantStatus {
+  REGISTERED
+  ASSIGNED
+  GIFT_SUBMITTED
+  GIFT_DELIVERED
+}
+
+model Assignment {
+  id          String    @id @default(cuid())
+  eventId     String
+  giverId     String    @unique
+  receiverId  String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  giver       Participant @relation("GiverAssignments", fields: [giverId], references: [id], onDelete: Cascade)
+  receiver    Participant @relation("ReceiverAssignments", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, giverId])
+  @@unique([eventId, receiverId])
+  @@map("assignments")
+}
+
+model Present {
+  id            String        @id @default(cuid())
+  giverId       String        @unique
+  receiverId    String        @unique
+  description   String?
+  status        PresentStatus @default(NOT_SUBMITTED)
+  submittedAt   DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  giver         Participant   @relation("PresentGiver", fields: [giverId], references: [id], onDelete: Cascade)
+  receiver      Participant   @relation("PresentReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("presents")
+}
+
+enum PresentStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  DELIVERED
 }
 
