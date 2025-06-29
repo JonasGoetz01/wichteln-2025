@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { NextResponse } from "next/server";
 import { auth, currentUser } from '@clerk/nextjs/server'
 
-const resend = new Resend('re_aExWKojp_Pbyv9kWFCcVdVisZPtU58Dfo');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET() {
   await auth.protect()
