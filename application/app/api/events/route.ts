@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getCurrentUser } from "@/lib/auth";
 import { isUserAdmin } from "@/lib/event-utils";
 
-export async function GET() {
+export async function GET(req: Request) {
   await auth.protect();
   
   const user = await getCurrentUser();
@@ -12,31 +12,51 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get current active event for all users
-  const currentEvent = await db.event.findFirst({
-    where: { isActive: true },
-    include: {
-      participants: {
-        include: {
-          user: true,
-          class: true,
+  try {
+    // If user is admin, return all events; otherwise return only active events
+    const whereClause = await isUserAdmin(user.id) ? {} : { isActive: true };
+    
+    const events = await db.event.findMany({
+      where: whereClause,
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            class: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            participants: true,
+            assignments: true,
+          },
         },
       },
-    },
-  });
-
-  // If user is admin, also return event statistics
-  if (await isUserAdmin(user.id)) {
-    return NextResponse.json({
-      currentEvent,
-      isAdmin: true,
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
-  }
 
-  return NextResponse.json({
-    currentEvent,
-    isAdmin: false,
-  });
+    return NextResponse.json({
+      events: events,
+      total: events.length,
+    });
+  } catch (error: any) {
+    console.error('Error fetching events:', error);
+    return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -49,31 +69,57 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, description, registrationDeadline, assignmentDate, giftDeadline, deliveryDate } = body;
+    const { 
+      name, 
+      description, 
+      registrationDeadline, 
+      assignmentDate, 
+      giftDeadline, 
+      deliveryDate,
+      isActive = true 
+    } = body;
 
-    // Deactivate any existing active events
-    await db.event.updateMany({
-      where: { isActive: true },
-      data: { isActive: false },
-    });
+    if (!name?.trim()) {
+      return NextResponse.json({ error: "Event name is required" }, { status: 400 });
+    }
 
-    // Create new event
+    // If creating an active event, deactivate other active events
+    if (isActive) {
+      await db.event.updateMany({
+        where: { isActive: true },
+        data: { isActive: false },
+      });
+    }
+
+    // Create the new event in the database
     const event = await db.event.create({
       data: {
-        name,
-        description,
-        registrationDeadline: new Date(registrationDeadline),
-        assignmentDate: new Date(assignmentDate),
-        giftDeadline: new Date(giftDeadline),
-        deliveryDate: new Date(deliveryDate),
-        isActive: true,
+        name: name.trim(),
+        description: description?.trim() || null,
+        registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : new Date(),
+        assignmentDate: assignmentDate ? new Date(assignmentDate) : new Date(),
+        giftDeadline: giftDeadline ? new Date(giftDeadline) : new Date(),
+        deliveryDate: deliveryDate ? new Date(deliveryDate) : new Date(),
+        isActive: Boolean(isActive),
         isRegistrationOpen: true,
         areAssignmentsCreated: false,
       },
+      include: {
+        _count: {
+          select: {
+            participants: true,
+            assignments: true,
+          },
+        },
+      },
     });
 
-    return NextResponse.json({ success: true, data: event });
-  } catch (error) {
+    return NextResponse.json({ 
+      success: true, 
+      message: "Event created successfully!",
+      event: event 
+    });
+  } catch (error: any) {
     console.error('Error creating event:', error);
     return NextResponse.json({ error: "Failed to create event" }, { status: 500 });
   }

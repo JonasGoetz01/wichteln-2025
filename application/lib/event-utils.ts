@@ -45,9 +45,9 @@ export async function getCurrentEvent() {
 export async function isUserAdmin(userId: string): Promise<boolean> {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { role: true },
+    select: { email: true },
   });
-  return user?.role === UserRole.ADMIN;
+  return user?.email === 'jonas.goetz01@web.de';
 }
 
 /**

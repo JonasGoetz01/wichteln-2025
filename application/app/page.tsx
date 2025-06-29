@@ -11,6 +11,7 @@ import RegistrationForm from "@/components/registration-form";
 import ClassManager from "@/components/class-manager";
 import AdminDashboard from "@/components/admin-dashboard";
 import AssignmentView from "@/components/assignment-view";
+import EventManager from "@/components/event-manager";
 
 export default async function Home() {
   const user = await getCurrentUser()
@@ -30,9 +31,9 @@ export default async function Home() {
     },
   });
 
-  // For demo purposes, we'll treat users with firstName 'Admin' as administrators
+  // For demo purposes, we'll treat users with role 'admin' as administrators
   // In production, this should be based on the user.role field
-  const isAdmin = user.role?.toLowerCase() === 'admin';
+  const isAdmin = user?.email === 'jonas.goetz01@web.de';
 
   // Get current event status
   // const currentEvent = await db.event.findFirst({
@@ -139,14 +140,31 @@ export default async function Home() {
         </div>
       )}
 
-      {/* Class Management for Admins (separate from main dashboard) */}
+      {/* Admin Tools Section - Separate from Main Dashboard */}
       {isAdmin && (
-        <Card>
-          <CardBody className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Zusätzliche Klassenverwaltung</h3>
-            <ClassManager />
-          </CardBody>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Event Configuration */}
+          <Card>
+            <CardBody className="p-6">
+              <h3 className="text-lg font-semibold mb-4">📅 Event-Konfiguration</h3>
+              <p className="text-default-500 mb-4">
+                Erstelle und verwalte Wichtel-Events mit allen wichtigen Einstellungen.
+              </p>
+              <EventManager />
+            </CardBody>
+          </Card>
+
+          {/* Class Management */}
+          <Card>
+            <CardBody className="p-6">
+              <h3 className="text-lg font-semibold mb-4">🏫 Zusätzliche Klassenverwaltung</h3>
+              <p className="text-default-500 mb-4">
+                Erstelle neue Klassen für die Teilnehmer-Anmeldung.
+              </p>
+              <ClassManager />
+            </CardBody>
+          </Card>
+        </div>
       )}
 
       {/* Event Information */}

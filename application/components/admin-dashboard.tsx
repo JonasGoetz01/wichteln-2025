@@ -35,6 +35,7 @@ import {
   Legend,
 } from 'recharts';
 import { format } from 'date-fns';
+import EventManager from './event-manager';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -309,6 +310,12 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                     </Table>
                   </CardBody>
                 </Card>
+              </div>
+            </Tab>
+
+            <Tab key="events" title="Event Management">
+              <div className="mt-4">
+                <EventManager />
               </div>
             </Tab>
 
