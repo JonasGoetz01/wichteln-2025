@@ -1,6 +1,8 @@
-import { db } from './db';
-import { UserRole, ParticipantStatus, PresentStatus } from '@prisma/client';
-import type { EventStats, ParticipantWithRelations } from '@/types';
+import type { EventStats } from "@/types";
+
+import { ParticipantStatus, PresentStatus } from "@prisma/client";
+
+import { db } from "./db";
 
 /**
  * Get the current active event
@@ -47,7 +49,8 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
     where: { id: userId },
     select: { email: true },
   });
-  return user?.email === 'jonas.goetz01@web.de';
+
+  return user?.email === "jonas.goetz01@web.de";
 }
 
 /**
@@ -69,39 +72,54 @@ export async function getEventStats(eventId: string): Promise<EventStats> {
   });
 
   if (!event) {
-    throw new Error('Event not found');
+    throw new Error("Event not found");
   }
 
   const totalParticipants = event.participants.length;
-  const registeredCount = event.participants.filter(p => p.status === ParticipantStatus.REGISTERED).length;
-  const assignedCount = event.participants.filter(p => p.status === ParticipantStatus.ASSIGNED).length;
-  const submittedPresentsCount = event.participants.filter(p => p.presentGiven?.status === PresentStatus.SUBMITTED).length;
-  const deliveredPresentsCount = event.participants.filter(p => p.presentReceived?.status === PresentStatus.DELIVERED).length;
+  const registeredCount = event.participants.filter(
+    (p) => p.status === ParticipantStatus.REGISTERED,
+  ).length;
+  const assignedCount = event.participants.filter(
+    (p) => p.status === ParticipantStatus.ASSIGNED,
+  ).length;
+  const submittedPresentsCount = event.participants.filter(
+    (p) => p.presentGiven?.status === PresentStatus.SUBMITTED,
+  ).length;
+  const deliveredPresentsCount = event.participants.filter(
+    (p) => p.presentReceived?.status === PresentStatus.DELIVERED,
+  ).length;
 
   // Group participants by class
-  const participantsByClass = event.participants.reduce((acc, participant) => {
-    const className = participant.class?.name || 'Keine Klasse';
-    const existing = acc.find(item => item.className === className);
-    if (existing) {
-      existing.count++;
-    } else {
-      acc.push({ className, count: 1 });
-    }
-    return acc;
-  }, [] as Array<{ className: string; count: number }>);
+  const participantsByClass = event.participants.reduce(
+    (acc, participant) => {
+      const className = participant.class?.name || "Keine Klasse";
+      const existing = acc.find((item) => item.className === className);
+
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ className, count: 1 });
+      }
+
+      return acc;
+    },
+    [] as Array<{ className: string; count: number }>,
+  );
 
   // Group registrations by date (last 7 days)
   const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  
+
   const registrationsByDate = [];
+
   for (let i = 6; i >= 0; i--) {
     const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateStr = date.toISOString().split('T')[0];
-    const count = event.participants.filter(p => {
-      const createdDate = p.createdAt.toISOString().split('T')[0];
+    const dateStr = date.toISOString().split("T")[0];
+    const count = event.participants.filter((p) => {
+      const createdDate = p.createdAt.toISOString().split("T")[0];
+
       return createdDate === dateStr;
     }).length;
+
     registrationsByDate.push({ date: dateStr, count });
   }
 
@@ -133,26 +151,27 @@ export async function createAssignments(eventId: string): Promise<void> {
   });
 
   if (!event) {
-    throw new Error('Event not found');
+    throw new Error("Event not found");
   }
 
   if (event.areAssignmentsCreated) {
-    throw new Error('Assignments already created for this event');
+    throw new Error("Assignments already created for this event");
   }
 
   const participants = event.participants;
+
   if (participants.length < 2) {
-    throw new Error('Need at least 2 participants to create assignments');
+    throw new Error("Need at least 2 participants to create assignments");
   }
 
   // Shuffle participants to create random assignments
   const shuffled = [...participants].sort(() => Math.random() - 0.5);
-  
+
   // Create assignments in a circle (each person gives to the next)
   const assignments = shuffled.map((giver, index) => {
     const receiverIndex = (index + 1) % shuffled.length;
     const receiver = shuffled[receiverIndex];
-    
+
     return {
       eventId,
       giverId: giver.id,
@@ -197,7 +216,10 @@ export async function createAssignments(eventId: string): Promise<void> {
 /**
  * Get participant's assignment information
  */
-export async function getParticipantAssignment(userId: string, eventId: string) {
+export async function getParticipantAssignment(
+  userId: string,
+  eventId: string,
+) {
   const participant = await db.participant.findFirst({
     where: {
       userId,
@@ -227,15 +249,16 @@ export async function getParticipantAssignment(userId: string, eventId: string) 
 export async function isRegistrationOpen(eventId: string): Promise<boolean> {
   const event = await db.event.findUnique({
     where: { id: eventId },
-    select: { 
-      isRegistrationOpen: true, 
-      registrationDeadline: true 
+    select: {
+      isRegistrationOpen: true,
+      registrationDeadline: true,
     },
   });
 
   if (!event) return false;
 
   const now = new Date();
+
   return event.isRegistrationOpen && now < event.registrationDeadline;
 }
 
@@ -243,14 +266,15 @@ export async function isRegistrationOpen(eventId: string): Promise<boolean> {
  * Register a user for an event
  */
 export async function registerUserForEvent(
-  userId: string, 
-  eventId: string, 
-  classId: string, 
-  interests: string
+  userId: string,
+  eventId: string,
+  classId: string,
+  interests: string,
 ): Promise<void> {
   const isOpen = await isRegistrationOpen(eventId);
+
   if (!isOpen) {
-    throw new Error('Registration is closed for this event');
+    throw new Error("Registration is closed for this event");
   }
 
   // Check if user is already registered
@@ -262,7 +286,7 @@ export async function registerUserForEvent(
   });
 
   if (existingParticipant) {
-    throw new Error('User is already registered for this event');
+    throw new Error("User is already registered for this event");
   }
 
   // Create participant record
@@ -283,10 +307,10 @@ export async function registerUserForEvent(
 export async function updatePresentStatus(
   presentId: string,
   status: PresentStatus,
-  description?: string
+  description?: string,
 ): Promise<void> {
   const updateData: any = { status };
-  
+
   if (status === PresentStatus.SUBMITTED) {
     updateData.submittedAt = new Date();
   } else if (status === PresentStatus.DELIVERED) {
@@ -319,4 +343,4 @@ export async function updatePresentStatus(
       data: { status: ParticipantStatus.GIFT_DELIVERED },
     });
   }
-} 
+}

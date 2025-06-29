@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+
 import { db } from "@/lib/db";
-import { auth } from '@clerk/nextjs/server'
 import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(req: Request) {
-  await auth.protect()
-  
+  await auth.protect();
+
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") ?? "1");
   const limit = parseInt(searchParams.get("limit") ?? "10");
@@ -34,8 +35,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -47,7 +49,10 @@ export async function POST(req: Request) {
     const { name } = body;
 
     if (!name || !name.trim()) {
-      return NextResponse.json({ error: "Class name is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Class name is required" },
+        { status: 400 },
+      );
     }
 
     // Check if class already exists
@@ -56,7 +61,10 @@ export async function POST(req: Request) {
     });
 
     if (existingClass) {
-      return NextResponse.json({ error: "Class already exists" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Class already exists" },
+        { status: 400 },
+      );
     }
 
     // Create new class
@@ -66,13 +74,17 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: newClass,
-      message: "Class created successfully!" 
+      message: "Class created successfully!",
     });
   } catch (error) {
-    console.error('Error creating class:', error);
-    return NextResponse.json({ error: "Failed to create class" }, { status: 500 });
+    console.error("Error creating class:", error);
+
+    return NextResponse.json(
+      { error: "Failed to create class" },
+      { status: 500 },
+    );
   }
 }

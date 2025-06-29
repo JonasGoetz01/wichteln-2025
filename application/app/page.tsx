@@ -1,7 +1,4 @@
-import {
-  Card,
-  CardBody,
-} from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -12,13 +9,10 @@ import AssignmentView from "@/components/assignment-view";
 import EventManager from "@/components/event-manager";
 
 export default async function Home() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
 
   if (!user) {
-    return (
-      <>
-      </>
-    )
+    return <></>;
   }
 
   // Check if user is already registered as participant
@@ -31,13 +25,11 @@ export default async function Home() {
 
   // For demo purposes, we'll treat users with role 'admin' as administrators
   // In production, this should be based on the user.role field
-  const isAdmin = user?.email === 'jonas.goetz01@web.de';
+  const isAdmin = user?.email === "jonas.goetz01@web.de";
 
-  // Get current event status
-  // const currentEvent = await db.event.findFirst({
-  //   where: { isActive: true },
-  // });
-  const currentEvent = null; // Placeholder until schema is fully synced
+  // TODO: Uncomment when schema is fully synced
+  // const { data: eventData } = useSWR('/api/events', fetcher);
+  // const currentEvent = eventData?.results?.find((event: any) => event.isActive) || null;
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -45,23 +37,27 @@ export default async function Home() {
       <Card>
         <CardBody className="p-6">
           <h1 className="text-2xl font-bold mb-2">
-            Hallo {user.firstName || 'User'}! 👋
+            Hallo {user.firstName || "User"}! 👋
           </h1>
           <p className="text-default-500">
-            Willkommen zur Wichtelaktion des Burghadt Gymnasiums Buchen. Hier kannst du deinen zugewiesenen Wichtel finden und alle Informationen zu der Wichtelaktion erhalten.
+            Willkommen zur Wichtelaktion des Burghadt Gymnasiums Buchen. Hier
+            kannst du deinen zugewiesenen Wichtel finden und alle Informationen
+            zu der Wichtelaktion erhalten.
           </p>
           {existingParticipant && (
             <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <p className="text-green-700 dark:text-green-400">
-                ✅ Du bist bereits für die Wichtelaktion angemeldet! 
-                {existingParticipant.class && ` (Klasse: ${existingParticipant.class.name})`}
+                ✅ Du bist bereits für die Wichtelaktion angemeldet!
+                {existingParticipant.class &&
+                  ` (Klasse: ${existingParticipant.class.name})`}
               </p>
             </div>
           )}
           {isAdmin && (
             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-blue-700 dark:text-blue-400">
-                🛠️ Administrator-Zugang erkannt. Du hast Zugriff auf das Admin-Dashboard.
+                🛠️ Administrator-Zugang erkannt. Du hast Zugriff auf das
+                Admin-Dashboard.
               </p>
             </div>
           )}
@@ -69,9 +65,7 @@ export default async function Home() {
       </Card>
 
       {/* Admin Dashboard - Full Featured */}
-      {isAdmin && (
-        <AdminDashboard />
-      )}
+      {isAdmin && <AdminDashboard />}
 
       {/* Regular User Experience */}
       {!isAdmin && (
@@ -84,33 +78,37 @@ export default async function Home() {
           )}
 
           {/* Assignment View - shown if registered */}
-          {existingParticipant && (
-            <AssignmentView />
-          )}
+          {existingParticipant && <AssignmentView />}
 
           {/* Current Status for Participants */}
           <Card>
             <CardBody className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Status der Wichtelaktion</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                Status der Wichtelaktion
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className={`text-center p-4 rounded-lg ${existingParticipant ? 'bg-green-50 dark:bg-green-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                <div
+                  className={`text-center p-4 rounded-lg ${existingParticipant ? "bg-green-50 dark:bg-green-900/20" : "bg-blue-50 dark:bg-blue-900/20"}`}
+                >
                   <p className="text-2xl font-bold text-blue-600">📝</p>
                   <p className="font-medium">Anmeldung</p>
                   <p className="text-sm text-default-500">
-                    {existingParticipant ? 'Abgeschlossen ✓' : 'Noch nicht abgeschlossen'}
+                    {existingParticipant
+                      ? "Abgeschlossen ✓"
+                      : "Noch nicht abgeschlossen"}
                   </p>
                 </div>
                 <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                   <p className="text-2xl font-bold text-yellow-600">🎯</p>
                   <p className="font-medium">Zuordnung</p>
-                  <p className="text-sm text-default-500">
-                    Steht noch aus
-                  </p>
+                  <p className="text-sm text-default-500">Steht noch aus</p>
                 </div>
                 <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-2xl font-bold text-green-600">🎁</p>
                   <p className="font-medium">Geschenke</p>
-                  <p className="text-sm text-default-500">Noch nicht gestartet</p>
+                  <p className="text-sm text-default-500">
+                    Noch nicht gestartet
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -124,9 +122,12 @@ export default async function Home() {
           {/* Event Configuration */}
           <Card>
             <CardBody className="p-6">
-              <h3 className="text-lg font-semibold mb-4">📅 Event-Konfiguration</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                📅 Event-Konfiguration
+              </h3>
               <p className="text-default-500 mb-4">
-                Erstelle und verwalte Wichtel-Events mit allen wichtigen Einstellungen.
+                Erstelle und verwalte Wichtel-Events mit allen wichtigen
+                Einstellungen.
               </p>
               <EventManager />
             </CardBody>
@@ -135,7 +136,9 @@ export default async function Home() {
           {/* Class Management */}
           <Card>
             <CardBody className="p-6">
-              <h3 className="text-lg font-semibold mb-4">🏫 Zusätzliche Klassenverwaltung</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                🏫 Zusätzliche Klassenverwaltung
+              </h3>
               <p className="text-default-500 mb-4">
                 Erstelle neue Klassen für die Teilnehmer-Anmeldung.
               </p>
@@ -150,8 +153,14 @@ export default async function Home() {
         <CardBody className="p-6">
           <h3 className="text-lg font-semibold mb-4">Wichtelaktion 2024</h3>
           <div className="space-y-2">
-            <p><strong>Name:</strong> Wichtelaktion des Burghadt Gymnasiums Buchen</p>
-            <p><strong>Beschreibung:</strong> Die jährliche Wichtelaktion für alle Schüler</p>
+            <p>
+              <strong>Name:</strong> Wichtelaktion des Burghadt Gymnasiums
+              Buchen
+            </p>
+            <p>
+              <strong>Beschreibung:</strong> Die jährliche Wichtelaktion für
+              alle Schüler
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
                 <p className="text-sm text-default-500">Anmeldephase</p>
@@ -201,5 +210,5 @@ export default async function Home() {
         </CardBody>
       </Card>
     </div>
-  )
+  );
 }

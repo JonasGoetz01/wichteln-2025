@@ -7,15 +7,32 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  getKeyValue,
   Spinner,
   Pagination,
   Chip,
   Avatar,
 } from "@heroui/react";
 import useSWR from "swr";
+import { Participant, PresentStatus, User } from "@prisma/client";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Define the participant type with nested relations
+type ParticipantWithDetails = Participant & {
+  user: User;
+  class?: { id: string; name: string } | null;
+  givingAssignment?: {
+    receiver: Participant & {
+      user: User;
+      class?: { id: string; name: string } | null;
+    };
+  } | null;
+  presentGiven?: {
+    status: PresentStatus;
+    description?: string | null;
+    submittedAt?: Date | null;
+  } | null;
+};
 
 export default function ParticipantsTable() {
   const [page, setPage] = React.useState(1);
@@ -24,7 +41,7 @@ export default function ParticipantsTable() {
   const { data, isLoading } = useSWR(
     `/api/participants?page=${page}&limit=${rowsPerPage}`,
     fetcher,
-    { keepPreviousData: true }
+    { keepPreviousData: true },
   );
 
   const pages = React.useMemo(() => {
@@ -36,29 +53,28 @@ export default function ParticipantsTable() {
   const renderAssignmentInfo = (participant: ParticipantWithDetails) => {
     if (!participant.givingAssignment) {
       return (
-        <Chip size="sm" variant="flat" color="default">
+        <Chip color="default" size="sm" variant="flat">
           Nicht zugeordnet
         </Chip>
       );
     }
 
     const receiver = participant.givingAssignment.receiver;
+
     return (
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <Avatar
-            src={receiver.user.imageUrl || undefined}
             name={`${receiver.user.firstName} ${receiver.user.lastName}`}
             size="sm"
+            src={receiver.user.imageUrl || undefined}
           />
           <div>
             <p className="text-sm font-medium">
               {receiver.user.firstName} {receiver.user.lastName}
             </p>
             {receiver.class && (
-              <p className="text-xs text-default-500">
-                {receiver.class.name}
-              </p>
+              <p className="text-xs text-default-500">{receiver.class.name}</p>
             )}
           </div>
         </div>
@@ -69,32 +85,31 @@ export default function ParticipantsTable() {
   const renderPresentStatus = (participant: ParticipantWithDetails) => {
     if (!participant.presentGiven) {
       return (
-        <Chip size="sm" variant="flat" color="default">
+        <Chip color="default" size="sm" variant="flat">
           Kein Geschenk
         </Chip>
       );
     }
 
     const present = participant.presentGiven;
-    const statusColors: Record<PresentStatus, "default" | "warning" | "success"> = {
-      NOT_SUBMITTED: 'default',
-      SUBMITTED: 'warning',  
-      DELIVERED: 'success'
+    const statusColors: Record<
+      PresentStatus,
+      "default" | "warning" | "success"
+    > = {
+      NOT_SUBMITTED: "default",
+      SUBMITTED: "warning",
+      DELIVERED: "success",
     };
 
     const statusLabels: Record<PresentStatus, string> = {
-      NOT_SUBMITTED: 'Nicht abgegeben',
-      SUBMITTED: 'Abgegeben',
-      DELIVERED: 'Übergeben'
+      NOT_SUBMITTED: "Nicht abgegeben",
+      SUBMITTED: "Abgegeben",
+      DELIVERED: "Übergeben",
     };
 
     return (
       <div className="flex flex-col gap-1">
-        <Chip 
-          size="sm" 
-          variant="flat" 
-          color={statusColors[present.status]}
-        >
+        <Chip color={statusColors[present.status]} size="sm" variant="flat">
           {statusLabels[present.status]}
         </Chip>
         {present.description && (
@@ -104,7 +119,7 @@ export default function ParticipantsTable() {
         )}
         {present.submittedAt && (
           <p className="text-xs text-default-400">
-            {new Date(present.submittedAt).toLocaleDateString('de-DE')}
+            {new Date(present.submittedAt).toLocaleDateString("de-DE")}
           </p>
         )}
       </div>
@@ -114,9 +129,6 @@ export default function ParticipantsTable() {
   return (
     <Table
       aria-label="Teilnehmertabelle mit Zuordnungen und Geschenken"
-      classNames={{
-        table: "min-h-[400px]",
-      }}
       bottomContent={
         pages > 1 && (
           <div className="flex w-full justify-center">
@@ -132,6 +144,9 @@ export default function ParticipantsTable() {
           </div>
         )
       }
+      classNames={{
+        table: "min-h-[400px]",
+      }}
     >
       <TableHeader>
         <TableColumn key="participant">Teilnehmer</TableColumn>
@@ -152,9 +167,9 @@ export default function ParticipantsTable() {
             <TableCell>
               <div className="flex items-center gap-3">
                 <Avatar
-                  src={participant.user.imageUrl || undefined}
                   name={`${participant.user.firstName} ${participant.user.lastName}`}
                   size="md"
+                  src={participant.user.imageUrl || undefined}
                 />
                 <div>
                   <p className="font-medium">
@@ -168,32 +183,36 @@ export default function ParticipantsTable() {
             </TableCell>
             <TableCell>
               {participant.class ? (
-                <Chip size="sm" variant="flat" color="primary">
+                <Chip color="primary" size="sm" variant="flat">
                   {participant.class.name}
                 </Chip>
               ) : (
                 <span className="text-default-400">Keine Klasse</span>
               )}
             </TableCell>
+            <TableCell>{renderAssignmentInfo(participant)}</TableCell>
+            <TableCell>{renderPresentStatus(participant)}</TableCell>
             <TableCell>
-              {renderAssignmentInfo(participant)}
-            </TableCell>
-            <TableCell>
-              {renderPresentStatus(participant)}
-            </TableCell>
-            <TableCell>
-              <Chip 
-                size="sm" 
-                variant="flat"
+              <Chip
                 color={
-                  participant.status === 'GIFT_DELIVERED' ? 'success' :
-                  participant.status === 'GIFT_SUBMITTED' ? 'warning' :
-                  participant.status === 'ASSIGNED' ? 'primary' : 'default'
+                  participant.status === "GIFT_DELIVERED"
+                    ? "success"
+                    : participant.status === "GIFT_SUBMITTED"
+                      ? "warning"
+                      : participant.status === "ASSIGNED"
+                        ? "primary"
+                        : "default"
                 }
+                size="sm"
+                variant="flat"
               >
-                {participant.status === 'GIFT_DELIVERED' ? 'Geschenk übergeben' :
-                 participant.status === 'GIFT_SUBMITTED' ? 'Geschenk abgegeben' :
-                 participant.status === 'ASSIGNED' ? 'Zugeordnet' : 'Registriert'}
+                {participant.status === "GIFT_DELIVERED"
+                  ? "Geschenk übergeben"
+                  : participant.status === "GIFT_SUBMITTED"
+                    ? "Geschenk abgegeben"
+                    : participant.status === "ASSIGNED"
+                      ? "Zugeordnet"
+                      : "Registriert"}
               </Chip>
             </TableCell>
           </TableRow>
@@ -201,4 +220,4 @@ export default function ParticipantsTable() {
       </TableBody>
     </Table>
   );
-} 
+}

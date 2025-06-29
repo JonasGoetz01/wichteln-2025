@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+
 import { db } from "@/lib/db";
-import { auth } from '@clerk/nextjs/server';
 import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: Request) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -21,7 +23,10 @@ export async function POST(req: Request) {
     });
 
     if (!classExists) {
-      return NextResponse.json({ error: "Invalid class selected" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid class selected" },
+        { status: 400 },
+      );
     }
 
     // Get or create active event
@@ -65,10 +70,11 @@ export async function POST(req: Request) {
           class: true,
         },
       });
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         data: updatedParticipant,
-        message: "Registrierung erfolgreich aktualisiert!" 
+        message: "Registrierung erfolgreich aktualisiert!",
       });
     } else {
       // Create new participant
@@ -84,14 +90,16 @@ export async function POST(req: Request) {
           class: true,
         },
       });
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         data: participant,
-        message: "Registrierung erfolgreich!" 
+        message: "Registrierung erfolgreich!",
       });
     }
   } catch (error) {
-    console.error('Error registering participant:', error);
+    console.error("Error registering participant:", error);
+
     return NextResponse.json({ error: "Failed to register" }, { status: 500 });
   }
-} 
+}

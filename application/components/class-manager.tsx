@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   CardBody,
@@ -8,33 +8,34 @@ import {
   Button,
   Input,
   Divider,
-} from '@heroui/react';
-import useSWR, { mutate } from 'swr';
+} from "@heroui/react";
+import useSWR, { mutate } from "swr";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ClassManager() {
   const [loading, setLoading] = useState(false);
-  const [className, setClassName] = useState('');
+  const [className, setClassName] = useState("");
 
   // Fetch existing classes
-  const { data: classesData, error } = useSWR('/api/classes', fetcher);
+  const { data: classesData, error } = useSWR("/api/classes", fetcher);
   const classes = classesData?.results || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!className.trim()) {
-      alert('Bitte gib einen Klassennamen ein.');
+      alert("Bitte gib einen Klassennamen ein.");
+
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/classes', {
-        method: 'POST',
+      const response = await fetch("/api/classes", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ name: className }),
       });
@@ -42,16 +43,16 @@ export default function ClassManager() {
       const result = await response.json();
 
       if (response.ok) {
-        alert(result.message || 'Klasse erfolgreich erstellt! 🎉');
-        setClassName('');
+        alert(result.message || "Klasse erfolgreich erstellt! 🎉");
+        setClassName("");
         // Refresh the classes list
-        mutate('/api/classes');
+        mutate("/api/classes");
       } else {
-        alert(result.error || 'Fehler beim Erstellen der Klasse');
+        alert(result.error || "Fehler beim Erstellen der Klasse");
       }
     } catch (error) {
-      console.error('Class creation error:', error);
-      alert('Fehler beim Erstellen der Klasse');
+      console.error("Class creation error:", error);
+      alert("Fehler beim Erstellen der Klasse");
     } finally {
       setLoading(false);
     }
@@ -69,22 +70,22 @@ export default function ClassManager() {
       </CardHeader>
       <CardBody className="space-y-6">
         {/* Create New Class Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="flex gap-2">
             <Input
+              className="flex-1"
               label="Neuer Klassenname"
               placeholder="z.B. 10a, 11b, etc."
               value={className}
               onChange={(e) => setClassName(e.target.value)}
-              className="flex-1"
             />
             <Button
-              type="submit"
               color="primary"
-              isLoading={loading}
               disabled={loading || !className.trim()}
+              isLoading={loading}
+              type="submit"
             >
-              {loading ? 'Erstellen...' : 'Erstellen'}
+              {loading ? "Erstellen..." : "Erstellen"}
             </Button>
           </div>
         </form>
@@ -116,4 +117,4 @@ export default function ClassManager() {
       </CardBody>
     </Card>
   );
-} 
+}

@@ -1,5 +1,15 @@
 import { SVGProps } from "react";
-import { User, Class, Participant, Event, Assignment, Present, UserRole, ParticipantStatus, PresentStatus } from '@prisma/client';
+import {
+  User,
+  Class,
+  Participant,
+  Event,
+  Assignment,
+  Present,
+  UserRole,
+  ParticipantStatus,
+  PresentStatus,
+} from "@prisma/client";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;

@@ -1,16 +1,15 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import {
   Card,
   CardBody,
   CardHeader,
   Chip,
-  Button,
   Divider,
   Avatar,
-} from '@heroui/react';
-import useSWR from 'swr';
+} from "@heroui/react";
+import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -19,10 +18,11 @@ interface AssignmentViewProps {
 }
 
 export default function AssignmentView({ className }: AssignmentViewProps) {
-  const { data: assignmentData, error, isLoading } = useSWR(
-    '/api/assignments',
-    fetcher
-  );
+  const {
+    data: assignmentData,
+    error,
+    isLoading,
+  } = useSWR("/api/assignments", fetcher);
 
   if (isLoading) {
     return (
@@ -54,11 +54,13 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
             <div className="text-4xl mb-4">🎯</div>
             <h3 className="text-lg font-semibold mb-2">No Assignment Yet</h3>
             <p className="text-default-500 mb-4">
-              Assignments haven't been created yet. You'll be notified once the organizers 
-              have matched everyone with their gift recipients.
+              Assignments haven&apos;t been created yet. You&apos;ll be notified
+              once the organizers have matched everyone with their gift
+              recipients.
             </p>
             <p className="text-sm text-default-400">
-              Make sure you've completed your registration with your class and interests!
+              Make sure you&apos;ve completed your registration with your class
+              and interests!
             </p>
           </div>
         </CardBody>
@@ -76,29 +78,29 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
           <div>
             <h2 className="text-xl font-bold">Your Secret Santa Assignment</h2>
             <p className="text-sm text-default-500">
-              Here's who you'll be buying a gift for!
+              Here&apos;s who you&apos;ll be buying a gift for!
             </p>
           </div>
         </div>
       </CardHeader>
-      
+
       <Divider />
-      
+
       <CardBody className="space-y-6">
         {/* Recipient Information */}
         <div className="flex items-start gap-4">
           <Avatar
-            src={recipient.user.imageUrl}
+            className="flex-shrink-0"
             name={`${recipient.user.firstName} ${recipient.user.lastName}`}
             size="lg"
-            className="flex-shrink-0"
+            src={recipient.user.imageUrl}
           />
           <div className="flex-1">
             <h3 className="text-lg font-semibold">
               {recipient.user.firstName} {recipient.user.lastName}
             </h3>
             {recipient.class && (
-              <Chip size="sm" variant="flat" color="primary" className="mt-1">
+              <Chip className="mt-1" color="primary" size="sm" variant="flat">
                 Class: {recipient.class.name}
               </Chip>
             )}
@@ -122,7 +124,8 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
           ) : (
             <div className="bg-default-50 dark:bg-default-900/20 rounded-lg p-4">
               <p className="text-default-500 italic">
-                No specific interests provided. Consider a general gift that most people would enjoy!
+                No specific interests provided. Consider a general gift that
+                most people would enjoy!
               </p>
             </div>
           )}
@@ -167,7 +170,10 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
             <p>• Bring your wrapped gift to the school office</p>
             <p>• Include a label with the recipient's name and class</p>
             <p>• Gifts will be distributed during the Christmas celebration</p>
-            <p>• Don't reveal that you're their Secret Santa until the event!</p>
+            <p>
+              • Don&apos;t reveal that you&apos;re their Secret Santa until the
+              event!
+            </p>
           </div>
         </div>
 
@@ -180,13 +186,20 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
                 Keep It Secret!
               </h4>
               <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                Remember, this is a Secret Santa exchange. Don't tell {recipient.user.firstName} 
-                that you're their gift giver. The fun is in the surprise!
+                Remember, this is a Secret Santa exchange. Don&apos;t tell{" "}
+                {recipient.user.firstName}
+                that you&apos;re their gift giver. The fun is in the surprise!
               </p>
             </div>
           </div>
         </div>
+
+        <Divider />
+
+        <p className="text-lg text-green-600 dark:text-green-400">
+          🎄 It&apos;s time to be someone&apos;s Secret Santa!
+        </p>
       </CardBody>
     </Card>
   );
-} 
+}

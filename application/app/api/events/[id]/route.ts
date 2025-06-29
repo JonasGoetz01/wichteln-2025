@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+
 import { db } from "@/lib/db";
-import { auth } from '@clerk/nextjs/server';
 import { getCurrentUser } from "@/lib/auth";
 import { isUserAdmin } from "@/lib/event-utils";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const eventId = params.id;
-    
+    const { id: eventId } = await params;
+
     const event = await db.event.findUnique({
       where: { id: eventId },
       include: {
@@ -50,40 +55,51 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     // If user is not admin, only return active events
-    if (!await isUserAdmin(user.id) && !event.isActive) {
+    if (!(await isUserAdmin(user.id)) && !event.isActive) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     return NextResponse.json({ event: event });
   } catch (error: any) {
-    console.error('Error fetching event:', error);
-    return NextResponse.json({ error: "Failed to fetch event" }, { status: 500 });
+    console.error("Error fetching event:", error);
+
+    return NextResponse.json(
+      { error: "Failed to fetch event" },
+      { status: 500 },
+    );
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user || !(await isUserAdmin(user.id))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const eventId = params.id;
+    const { id: eventId } = await params;
     const body = await req.json();
-    const { 
-      name, 
-      description, 
-      registrationDeadline, 
-      assignmentDate, 
-      giftDeadline, 
+    const {
+      name,
+      description,
+      registrationDeadline,
+      assignmentDate,
+      giftDeadline,
       deliveryDate,
-      isActive 
+      isActive,
     } = body;
 
     if (!name?.trim()) {
-      return NextResponse.json({ error: "Event name is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Event name is required" },
+        { status: 400 },
+      );
     }
 
     // Check if event exists
@@ -99,9 +115,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     // If making this event active and it wasn't before, deactivate other events
     if (isActive && !existingEvent.isActive) {
       await db.event.updateMany({
-        where: { 
+        where: {
           id: { not: eventId },
-          isActive: true 
+          isActive: true,
         },
         data: { isActive: false },
       });
@@ -113,7 +129,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : undefined,
+        registrationDeadline: registrationDeadline
+          ? new Date(registrationDeadline)
+          : undefined,
         assignmentDate: assignmentDate ? new Date(assignmentDate) : undefined,
         giftDeadline: giftDeadline ? new Date(giftDeadline) : undefined,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
@@ -129,29 +147,37 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Event updated successfully!",
-      event: updatedEvent 
+      event: updatedEvent,
     });
   } catch (error: any) {
-    console.error('Error updating event:', error);
-    return NextResponse.json({ error: "Failed to update event" }, { status: 500 });
+    console.error("Error updating event:", error);
+
+    return NextResponse.json(
+      { error: "Failed to update event" },
+      { status: 500 },
+    );
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user || !(await isUserAdmin(user.id))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const eventId = params.id;
+    const { id: eventId } = await params;
     const body = await req.json();
-    
+
     // For partial updates, typically used for status changes
     const { isActive, areAssignmentsCreated } = body;
 
@@ -168,9 +194,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // If making this event active and it wasn't before, deactivate other events
     if (isActive !== undefined && isActive && !existingEvent.isActive) {
       await db.event.updateMany({
-        where: { 
+        where: {
           id: { not: eventId },
-          isActive: true 
+          isActive: true,
         },
         data: { isActive: false },
       });
@@ -178,8 +204,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     // Update only the provided fields
     const updateData: any = {};
+
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-    if (areAssignmentsCreated !== undefined) updateData.areAssignmentsCreated = Boolean(areAssignmentsCreated);
+    if (areAssignmentsCreated !== undefined)
+      updateData.areAssignmentsCreated = Boolean(areAssignmentsCreated);
 
     const patchedEvent = await db.event.update({
       where: { id: eventId },
@@ -194,27 +222,35 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Event status updated successfully!",
-      event: patchedEvent 
+      event: patchedEvent,
     });
   } catch (error: any) {
-    console.error('Error patching event:', error);
-    return NextResponse.json({ error: "Failed to patch event" }, { status: 500 });
+    console.error("Error patching event:", error);
+
+    return NextResponse.json(
+      { error: "Failed to patch event" },
+      { status: 500 },
+    );
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user || !(await isUserAdmin(user.id))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const eventId = params.id;
+    const { id: eventId } = await params;
 
     // Check if event exists
     const existingEvent = await db.event.findUnique({
@@ -235,15 +271,23 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     // Check if event has participants or assignments before deletion
     if (existingEvent._count.participants > 0) {
-      return NextResponse.json({ 
-        error: "Cannot delete event with existing participants. Please remove all participants first." 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete event with existing participants. Please remove all participants first.",
+        },
+        { status: 400 },
+      );
     }
 
     if (existingEvent._count.assignments > 0) {
-      return NextResponse.json({ 
-        error: "Cannot delete event with existing assignments. Please remove all assignments first." 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete event with existing assignments. Please remove all assignments first.",
+        },
+        { status: 400 },
+      );
     }
 
     // Delete the event
@@ -251,12 +295,16 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       where: { id: eventId },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Event deleted successfully!" 
+    return NextResponse.json({
+      success: true,
+      message: "Event deleted successfully!",
     });
   } catch (error: any) {
-    console.error('Error deleting event:', error);
-    return NextResponse.json({ error: "Failed to delete event" }, { status: 500 });
+    console.error("Error deleting event:", error);
+
+    return NextResponse.json(
+      { error: "Failed to delete event" },
+      { status: 500 },
+    );
   }
-} 
+}

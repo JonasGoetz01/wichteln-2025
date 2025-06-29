@@ -1,27 +1,19 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
+import React from "react";
 
+import AuthPage from "./auth-page";
 import { Providers } from "./providers";
+import Footer from "./footer";
 
+import { Navbar } from "@/components/navbar";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { Navbar } from "@/components/navbar";
-
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from '@vercel/speed-insights/next';
-
-import {
-  ClerkProvider,
-  SignedIn,
-  SignedOut,
-} from '@clerk/nextjs'
-import { dark } from '@clerk/themes'
-import AuthPage from "./auth-page";
-
-import React from "react";
-import {Divider} from "@heroui/react";
-import Footer from "./footer";
 
 export const metadata: Metadata = {
   title: {
@@ -46,8 +38,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (  
-    <ClerkProvider 
+  return (
+    <ClerkProvider
       appearance={{
         baseTheme: dark,
       }}
@@ -64,7 +56,7 @@ export default function RootLayout({
             <SignedOut>
               <AuthPage />
             </SignedOut>
-            
+
             <SignedIn>
               <Navbar />
               <main className="container mx-auto max-w-7xl pt-16 px-6">
@@ -78,6 +70,6 @@ export default function RootLayout({
           </Providers>
         </body>
       </html>
-    </ClerkProvider>  
+    </ClerkProvider>
   );
 }

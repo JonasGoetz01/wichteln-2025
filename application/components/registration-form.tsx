@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   CardBody,
@@ -9,9 +9,9 @@ import {
   Select,
   SelectItem,
   Textarea,
-} from '@heroui/react';
-import useSWR from 'swr';
-import { useRouter } from 'next/navigation';
+} from "@heroui/react";
+import useSWR from "swr";
+import { useRouter } from "next/navigation";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -19,28 +19,29 @@ export default function RegistrationForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    classId: '',
-    interests: '',
+    classId: "",
+    interests: "",
   });
 
   // Fetch available classes
-  const { data: classesData } = useSWR('/api/classes', fetcher);
+  const { data: classesData } = useSWR("/api/classes", fetcher);
   const classes = classesData?.results || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.classId) {
-      alert('Bitte wähle deine Klasse aus.');
+      alert("Bitte wähle deine Klasse aus.");
+
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/register', {
-        method: 'POST',
+      const response = await fetch("/api/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
@@ -48,15 +49,15 @@ export default function RegistrationForm() {
       const result = await response.json();
 
       if (response.ok) {
-        alert(result.message || 'Erfolgreich registriert! 🎉');
+        alert(result.message || "Erfolgreich registriert! 🎉");
         // Refresh the page to show updated registration status
         router.refresh();
       } else {
-        alert(result.error || 'Fehler bei der Registrierung');
+        alert(result.error || "Fehler bei der Registrierung");
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      alert('Fehler bei der Registrierung');
+      console.error("Registration error:", error);
+      alert("Fehler bei der Registrierung");
     } finally {
       setLoading(false);
     }
@@ -73,35 +74,34 @@ export default function RegistrationForm() {
         </div>
       </CardHeader>
       <CardBody>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <Select
+            required
             label="Klasse"
             placeholder="Wähle deine Klasse"
             selectedKeys={formData.classId ? [formData.classId] : []}
             onSelectionChange={(keys) => {
               const selectedKey = Array.from(keys)[0] as string;
+
               setFormData({ ...formData, classId: selectedKey });
             }}
-            required
           >
             {classes.map((cls: any) => (
-              <SelectItem key={cls.id}>
-                {cls.name}
-              </SelectItem>
+              <SelectItem key={cls.id}>{cls.name}</SelectItem>
             ))}
           </Select>
 
           <Textarea
-            label="Interessen & Geschenkwünsche"
-            placeholder="Beschreibe deine Hobbys, Interessen oder Geschenkideen... (optional)"
+            className="w-full"
             description="Hilf deinem Wichtel bei der Geschenkauswahl! Z.B. Bücher, Sport, Musik, Süßigkeiten, etc."
+            label="Interessen & Geschenkwünsche"
+            maxRows={6}
+            minRows={3}
+            placeholder="Beschreibe deine Hobbys, Interessen oder Geschenkideen... (optional)"
             value={formData.interests}
             onValueChange={(value) => {
               setFormData({ ...formData, interests: value });
             }}
-            minRows={3}
-            maxRows={6}
-            className="w-full"
           />
 
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
@@ -109,22 +109,25 @@ export default function RegistrationForm() {
               <span className="text-blue-600 text-sm">💡</span>
               <div className="text-xs text-blue-600 dark:text-blue-300">
                 <p className="font-medium mb-1">Tipp für bessere Geschenke:</p>
-                <p>Erwähne deine Hobbys, Lieblingssachen oder was du gerne magst. So kann dein Wichtel das perfekte Geschenk für dich finden!</p>
+                <p>
+                  Erwähne deine Hobbys, Lieblingssachen oder was du gerne magst.
+                  So kann dein Wichtel das perfekte Geschenk für dich finden!
+                </p>
               </div>
             </div>
           </div>
 
           <Button
-            type="submit"
-            color="primary"
             className="w-full"
-            isLoading={loading}
+            color="primary"
             disabled={loading}
+            isLoading={loading}
+            type="submit"
           >
-            {loading ? 'Wird registriert...' : 'Jetzt anmelden'}
+            {loading ? "Wird registriert..." : "Jetzt anmelden"}
           </Button>
         </form>
       </CardBody>
     </Card>
   );
-} 
+}

@@ -1,29 +1,32 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { auth } from '@clerk/nextjs/server';
-import { getCurrentUser } from "@/lib/auth";
-import { isUserAdmin, getCurrentEvent } from "@/lib/event-utils";
+import { auth } from "@clerk/nextjs/server";
 import { PresentStatus, ParticipantStatus } from "@prisma/client";
 
-export async function GET(req: Request) {
+import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { isUserAdmin, getCurrentEvent } from "@/lib/event-utils";
+
+export async function GET(_req: Request) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const isAdmin = await isUserAdmin(user.id);
-    
+
     if (isAdmin) {
       // Admins can see all presents for the current active event
       const currentEvent = await getCurrentEvent();
+
       if (!currentEvent) {
-        return NextResponse.json({ 
-          presents: [], 
+        return NextResponse.json({
+          presents: [],
           stats: { totalParticipants: 0, submittedCount: 0, deliveredCount: 0 },
-          message: "No active event found" 
+          message: "No active event found",
         });
       }
 
@@ -73,7 +76,7 @@ export async function GET(req: Request) {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: "desc",
         },
       });
 
@@ -82,8 +85,14 @@ export async function GET(req: Request) {
         where: { eventId: currentEvent.id },
       });
 
-      const submittedCount = presents.filter(p => p.status === PresentStatus.SUBMITTED || p.status === PresentStatus.DELIVERED).length;
-      const deliveredCount = presents.filter(p => p.status === PresentStatus.DELIVERED).length;
+      const submittedCount = presents.filter(
+        (p) =>
+          p.status === PresentStatus.SUBMITTED ||
+          p.status === PresentStatus.DELIVERED,
+      ).length;
+      const deliveredCount = presents.filter(
+        (p) => p.status === PresentStatus.DELIVERED,
+      ).length;
 
       const stats = {
         totalParticipants,
@@ -101,15 +110,16 @@ export async function GET(req: Request) {
     } else {
       // Regular users can see their own present status
       const currentEvent = await getCurrentEvent();
+
       if (!currentEvent) {
-        return NextResponse.json({ 
-          present: null, 
-          message: "No active event found" 
+        return NextResponse.json({
+          present: null,
+          message: "No active event found",
         });
       }
 
       const participant = await db.participant.findFirst({
-        where: { 
+        where: {
           userId: user.id,
           eventId: currentEvent.id,
         },
@@ -128,15 +138,20 @@ export async function GET(req: Request) {
       });
     }
   } catch (error) {
-    console.error('Error fetching presents:', error);
-    return NextResponse.json({ error: "Failed to fetch presents" }, { status: 500 });
+    console.error("Error fetching presents:", error);
+
+    return NextResponse.json(
+      { error: "Failed to fetch presents" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(req: Request) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -153,7 +168,7 @@ export async function POST(req: Request) {
     let present;
     let updatedParticipant;
 
-    if (action === 'mark_submitted') {
+    if (action === "mark_submitted") {
       // Find the present by giver participant ID
       present = await db.present.findFirst({
         where: { giverId: participantId },
@@ -165,13 +180,16 @@ export async function POST(req: Request) {
       });
 
       if (!present) {
-        return NextResponse.json({ error: "Present not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Present not found" },
+          { status: 404 },
+        );
       }
 
       // Update present status and timestamp
       await db.present.update({
         where: { id: present.id },
-        data: { 
+        data: {
           status: PresentStatus.SUBMITTED,
           submittedAt: new Date(),
           description: description || null,
@@ -184,14 +202,13 @@ export async function POST(req: Request) {
         data: { status: ParticipantStatus.GIFT_SUBMITTED },
       });
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `Present from ${present.giver.user.firstName} marked as submitted!`,
         present,
         participant: updatedParticipant,
       });
-
-    } else if (action === 'mark_delivered') {
+    } else if (action === "mark_delivered") {
       // Find the present by giver participant ID
       present = await db.present.findFirst({
         where: { giverId: participantId },
@@ -206,17 +223,26 @@ export async function POST(req: Request) {
       });
 
       if (!present) {
-        return NextResponse.json({ error: "Present not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Present not found" },
+          { status: 404 },
+        );
       }
 
       if (present.status !== PresentStatus.SUBMITTED) {
-        return NextResponse.json({ error: "Present must be submitted before it can be marked as delivered" }, { status: 400 });
+        return NextResponse.json(
+          {
+            error:
+              "Present must be submitted before it can be marked as delivered",
+          },
+          { status: 400 },
+        );
       }
 
       // Update present status and timestamp
       await db.present.update({
         where: { id: present.id },
-        data: { 
+        data: {
           status: PresentStatus.DELIVERED,
           deliveredAt: new Date(),
         },
@@ -228,17 +254,19 @@ export async function POST(req: Request) {
         data: { status: ParticipantStatus.GIFT_DELIVERED },
       });
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `Present delivered to ${present.receiver.user.firstName}!`,
         present,
         participant: updatedParticipant,
       });
-
-    } else if (action === 'update_description') {
+    } else if (action === "update_description") {
       // Update present description
       if (!presentId) {
-        return NextResponse.json({ error: "Present ID required" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Present ID required" },
+          { status: 400 },
+        );
       }
 
       present = await db.present.update({
@@ -251,8 +279,8 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "Present description updated!",
         present,
       });
@@ -260,17 +288,22 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
-    console.error('Error updating present:', error);
-    return NextResponse.json({ 
-      error: error.message || "Failed to update present" 
-    }, { status: 500 });
+    console.error("Error updating present:", error);
+
+    return NextResponse.json(
+      {
+        error: error.message || "Failed to update present",
+      },
+      { status: 500 },
+    );
   }
 }
 
 export async function PATCH(req: Request) {
   await auth.protect();
-  
+
   const user = await getCurrentUser();
+
   if (!user || !(await isUserAdmin(user.id))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -280,21 +313,24 @@ export async function PATCH(req: Request) {
     const { presentId, status, description } = body;
 
     if (!presentId) {
-      return NextResponse.json({ error: "Present ID required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Present ID required" },
+        { status: 400 },
+      );
     }
 
     const updateData: any = {};
-    
+
     if (status) {
       updateData.status = status;
-      
+
       if (status === PresentStatus.SUBMITTED) {
         updateData.submittedAt = new Date();
       } else if (status === PresentStatus.DELIVERED) {
         updateData.deliveredAt = new Date();
       }
     }
-    
+
     if (description !== undefined) {
       updateData.description = description;
     }
@@ -324,16 +360,20 @@ export async function PATCH(req: Request) {
         data: { status: ParticipantStatus.GIFT_DELIVERED },
       });
     }
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: `Present status updated to ${status}!`,
       present,
     });
   } catch (error: any) {
-    console.error('Error updating present status:', error);
-    return NextResponse.json({ 
-      error: error.message || "Failed to update present status" 
-    }, { status: 500 });
+    console.error("Error updating present status:", error);
+
+    return NextResponse.json(
+      {
+        error: error.message || "Failed to update present status",
+      },
+      { status: 500 },
+    );
   }
-} 
+}

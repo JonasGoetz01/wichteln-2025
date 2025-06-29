@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   CardBody,
   CardHeader,
   Button,
-  Divider,
   Chip,
   Table,
   TableHeader,
@@ -17,8 +16,8 @@ import {
   Progress,
   Tabs,
   Tab,
-} from '@heroui/react';
-import useSWR from 'swr';
+} from "@heroui/react";
+import useSWR from "swr";
 import {
   LineChart,
   Line,
@@ -27,15 +26,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
-  Legend,
-} from 'recharts';
-import { format } from 'date-fns';
-import EventManager from './event-manager';
+} from "recharts";
+import { format } from "date-fns";
+
+import EventManager from "./event-manager";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -44,44 +40,50 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ className }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>("overview");
   const [loading, setLoading] = useState(false);
 
   // Fetch statistics
-  const { data: statsData, error: statsError, mutate: mutateStats } = useSWR(
-    '/api/statistics',
+  const {
+    data: statsData,
+    error: statsError,
+    mutate: mutateStats,
+  } = useSWR(
+    "/api/statistics",
     fetcher,
-    { refreshInterval: 30000 } // Refresh every 30 seconds
+    { refreshInterval: 30000 }, // Refresh every 30 seconds
   );
 
   // Fetch presents data
   const { data: presentsData, mutate: mutatePresents } = useSWR(
-    '/api/presents',
-    fetcher
+    "/api/presents",
+    fetcher,
   );
 
   // Add assignments data fetching
   const { data: assignmentsData, mutate: mutateAssignments } = useSWR(
-    '/api/assignments',
-    fetcher
+    "/api/assignments",
+    fetcher,
   );
-
-
 
   const stats = statsData?.data?.stats || {};
   const chartData = statsData?.data || {};
 
   const handleCreateAssignments = async () => {
-    if (!confirm('Are you sure you want to create assignments? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to create assignments? This action cannot be undone.",
+      )
+    ) {
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
+      const response = await fetch("/api/assignments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({}),
       });
@@ -89,14 +91,15 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
       if (response.ok) {
         await mutateStats();
         await mutateAssignments(); // Refresh assignments data
-        alert('Assignments created successfully!');
+        alert("Assignments created successfully!");
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create assignments');
+
+        alert(error.error || "Failed to create assignments");
       }
     } catch (error) {
-      console.error('Error creating assignments:', error);
-      alert('Failed to create assignments');
+      console.error("Error creating assignments:", error);
+      alert("Failed to create assignments");
     } finally {
       setLoading(false);
     }
@@ -105,25 +108,26 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
   const handleMarkPresent = async (action: string, participantId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/presents', {
-        method: 'POST',
+      const response = await fetch("/api/presents", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ action, participantId }),
       });
 
       const result = await response.json();
+
       if (response.ok) {
         alert(result.message);
         mutatePresents();
         mutateStats();
       } else {
-        alert(result.error || 'Failed to update present');
+        alert(result.error || "Failed to update present");
       }
     } catch (error) {
-      console.error('Error updating present:', error);
-      alert('Failed to update present');
+      console.error("Error updating present:", error);
+      alert("Failed to update present");
     } finally {
       setLoading(false);
     }
@@ -151,9 +155,9 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
             </div>
             <Button
               color="primary"
-              onPress={handleCreateAssignments}
-              isLoading={loading}
               disabled={loading}
+              isLoading={loading}
+              onPress={handleCreateAssignments}
             >
               Create Assignments
             </Button>
@@ -201,9 +205,9 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
       <Card>
         <CardBody>
           <Tabs
+            aria-label="Dashboard tabs"
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key as string)}
-            aria-label="Dashboard tabs"
           >
             <Tab key="overview" title="Overview">
               <div className="space-y-6 mt-4">
@@ -212,20 +216,22 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                   {/* Registrations over time */}
                   <Card>
                     <CardHeader>
-                      <h3 className="text-lg font-semibold">Registrations Over Time</h3>
+                      <h3 className="text-lg font-semibold">
+                        Registrations Over Time
+                      </h3>
                     </CardHeader>
                     <CardBody>
-                      <ResponsiveContainer width="100%" height={300}>
+                      <ResponsiveContainer height={300} width="100%">
                         <LineChart data={chartData.registrationsByDate || []}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="dateFormatted" />
                           <YAxis />
                           <Tooltip />
                           <Line
-                            type="monotone"
                             dataKey="cumulative"
                             stroke="#8884d8"
                             strokeWidth={2}
+                            type="monotone"
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -235,10 +241,12 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                   {/* Class distribution */}
                   <Card>
                     <CardHeader>
-                      <h3 className="text-lg font-semibold">Participants by Class</h3>
+                      <h3 className="text-lg font-semibold">
+                        Participants by Class
+                      </h3>
                     </CardHeader>
                     <CardBody>
-                      <ResponsiveContainer width="100%" height={300}>
+                      <ResponsiveContainer height={300} width="100%">
                         <BarChart data={chartData.participantsByClass || []}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="className" />
@@ -254,7 +262,9 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                 {/* Recent Activity */}
                 <Card>
                   <CardHeader>
-                    <h3 className="text-lg font-semibold">Recent Registrations</h3>
+                    <h3 className="text-lg font-semibold">
+                      Recent Registrations
+                    </h3>
                   </CardHeader>
                   <CardBody>
                     <Table aria-label="Recent registrations">
@@ -264,19 +274,24 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                         <TableColumn>Registered</TableColumn>
                       </TableHeader>
                       <TableBody>
-                        {(chartData.recentActivity || []).map((activity: any) => (
-                          <TableRow key={activity.id}>
-                            <TableCell>{activity.userName}</TableCell>
-                            <TableCell>
-                              <Chip size="sm" variant="flat">
-                                {activity.className}
-                              </Chip>
-                            </TableCell>
-                            <TableCell>
-                              {format(new Date(activity.registeredAt), 'MMM dd, HH:mm')}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {(chartData.recentActivity || []).map(
+                          (activity: any) => (
+                            <TableRow key={activity.id}>
+                              <TableCell>{activity.userName}</TableCell>
+                              <TableCell>
+                                <Chip size="sm" variant="flat">
+                                  {activity.className}
+                                </Chip>
+                              </TableCell>
+                              <TableCell>
+                                {format(
+                                  new Date(activity.registeredAt),
+                                  "MMM dd, HH:mm",
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )}
                       </TableBody>
                     </Table>
                   </CardBody>
@@ -294,7 +309,9 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
               <div className="mt-4">
                 <Card>
                   <CardHeader>
-                    <h3 className="text-lg font-semibold">Participant Management</h3>
+                    <h3 className="text-lg font-semibold">
+                      Participant Management
+                    </h3>
                   </CardHeader>
                   <CardBody>
                     <Table aria-label="Participants">
@@ -305,34 +322,49 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                         <TableColumn>Status</TableColumn>
                       </TableHeader>
                       <TableBody>
-                        {(assignmentsData?.assignments || []).map((assignment: any) => (
-                          <TableRow key={assignment.giver.id}>
-                            <TableCell>
-                              {assignment.giver.user.firstName} {assignment.giver.user.lastName}
-                            </TableCell>
-                            <TableCell>{assignment.giver.user.email}</TableCell>
-                            <TableCell>
-                              <Chip size="sm" variant="flat">
-                                {assignment.giver.class?.name || 'No Class'}
-                              </Chip>
-                            </TableCell>
-                            <TableCell>
-                              <Chip 
-                                size="sm" 
-                                variant="flat"
-                                color={
-                                  assignment.giver.status === 'GIFT_DELIVERED' ? 'success' :
-                                  assignment.giver.status === 'GIFT_SUBMITTED' ? 'warning' :
-                                  assignment.giver.status === 'ASSIGNED' ? 'primary' : 'default'
-                                }
-                              >
-                                {assignment.giver.status === 'GIFT_DELIVERED' ? 'Gift Delivered' :
-                                 assignment.giver.status === 'GIFT_SUBMITTED' ? 'Gift Submitted' :
-                                 assignment.giver.status === 'ASSIGNED' ? 'Assigned' : 'Registered'}
-                              </Chip>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {(assignmentsData?.assignments || []).map(
+                          (assignment: any) => (
+                            <TableRow key={assignment.giver.id}>
+                              <TableCell>
+                                {assignment.giver.user.firstName}{" "}
+                                {assignment.giver.user.lastName}
+                              </TableCell>
+                              <TableCell>
+                                {assignment.giver.user.email}
+                              </TableCell>
+                              <TableCell>
+                                <Chip size="sm" variant="flat">
+                                  {assignment.giver.class?.name || "No Class"}
+                                </Chip>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  color={
+                                    assignment.giver.status === "GIFT_DELIVERED"
+                                      ? "success"
+                                      : assignment.giver.status ===
+                                          "GIFT_SUBMITTED"
+                                        ? "warning"
+                                        : assignment.giver.status === "ASSIGNED"
+                                          ? "primary"
+                                          : "default"
+                                  }
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {assignment.giver.status === "GIFT_DELIVERED"
+                                    ? "Gift Delivered"
+                                    : assignment.giver.status ===
+                                        "GIFT_SUBMITTED"
+                                      ? "Gift Submitted"
+                                      : assignment.giver.status === "ASSIGNED"
+                                        ? "Assigned"
+                                        : "Registered"}
+                                </Chip>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )}
                       </TableBody>
                     </Table>
                   </CardBody>
@@ -345,7 +377,9 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                 <Card>
                   <CardHeader className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-lg font-semibold">Present Tracking</h3>
+                      <h3 className="text-lg font-semibold">
+                        Present Tracking
+                      </h3>
                       <p className="text-sm text-default-500">
                         Track gift submission and delivery status
                       </p>
@@ -374,19 +408,20 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                     )}
                   </CardHeader>
                   <CardBody>
-                    {!presentsData?.presents || presentsData.presents.length === 0 ? (
+                    {!presentsData?.presents ||
+                    presentsData.presents.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-default-500 mb-4">
-                          {!presentsData?.event ? 
-                            'No active event found.' : 
-                            'No presents found. Create assignments first to start tracking presents.'
-                          }
+                          {!presentsData?.event
+                            ? "No active event found."
+                            : "No presents found. Create assignments first to start tracking presents."}
                         </p>
-                        {!assignmentsData?.assignments || assignmentsData.assignments.length === 0 ? (
+                        {!assignmentsData?.assignments ||
+                        assignmentsData.assignments.length === 0 ? (
                           <Button
                             color="primary"
-                            onPress={handleCreateAssignments}
                             isLoading={loading}
+                            onPress={handleCreateAssignments}
                           >
                             Create Assignments
                           </Button>
@@ -397,29 +432,45 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                         {/* Progress Overview */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                           <div className="p-4 bg-orange-50 rounded-lg">
-                            <h4 className="font-semibold text-orange-800 mb-2">Submission Progress</h4>
+                            <h4 className="font-semibold text-orange-800 mb-2">
+                              Submission Progress
+                            </h4>
                             <Progress
-                              value={presentsData.stats.totalParticipants > 0 ? 
-                                (presentsData.stats.submittedCount / presentsData.stats.totalParticipants) * 100 : 0}
+                              className="mb-2"
                               color="warning"
                               showValueLabel={true}
-                              className="mb-2"
+                              value={
+                                presentsData.stats.totalParticipants > 0
+                                  ? (presentsData.stats.submittedCount /
+                                      presentsData.stats.totalParticipants) *
+                                    100
+                                  : 0
+                              }
                             />
                             <p className="text-sm text-orange-700">
-                              {presentsData.stats.submittedCount} of {presentsData.stats.totalParticipants} submitted
+                              {presentsData.stats.submittedCount} of{" "}
+                              {presentsData.stats.totalParticipants} submitted
                             </p>
                           </div>
                           <div className="p-4 bg-green-50 rounded-lg">
-                            <h4 className="font-semibold text-green-800 mb-2">Delivery Progress</h4>
+                            <h4 className="font-semibold text-green-800 mb-2">
+                              Delivery Progress
+                            </h4>
                             <Progress
-                              value={presentsData.stats.totalParticipants > 0 ? 
-                                (presentsData.stats.deliveredCount / presentsData.stats.totalParticipants) * 100 : 0}
+                              className="mb-2"
                               color="success"
                               showValueLabel={true}
-                              className="mb-2"
+                              value={
+                                presentsData.stats.totalParticipants > 0
+                                  ? (presentsData.stats.deliveredCount /
+                                      presentsData.stats.totalParticipants) *
+                                    100
+                                  : 0
+                              }
                             />
                             <p className="text-sm text-green-700">
-                              {presentsData.stats.deliveredCount} of {presentsData.stats.totalParticipants} delivered
+                              {presentsData.stats.deliveredCount} of{" "}
+                              {presentsData.stats.totalParticipants} delivered
                             </p>
                           </div>
                         </div>
@@ -442,7 +493,8 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                                 <TableCell>
                                   <div>
                                     <p className="font-medium">
-                                      {present.giver.user.firstName} {present.giver.user.lastName}
+                                      {present.giver.user.firstName}{" "}
+                                      {present.giver.user.lastName}
                                     </p>
                                     <p className="text-xs text-default-500">
                                       {present.giver.user.email}
@@ -450,17 +502,24 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Chip size="sm" variant="flat" color="primary">
-                                    {present.giver.class?.name || 'No Class'}
+                                  <Chip
+                                    color="primary"
+                                    size="sm"
+                                    variant="flat"
+                                  >
+                                    {present.giver.class?.name || "No Class"}
                                   </Chip>
                                 </TableCell>
                                 <TableCell>
-                                  <span className="text-2xl text-default-400">→</span>
+                                  <span className="text-2xl text-default-400">
+                                    →
+                                  </span>
                                 </TableCell>
                                 <TableCell>
                                   <div>
                                     <p className="font-medium">
-                                      {present.receiver.user.firstName} {present.receiver.user.lastName}
+                                      {present.receiver.user.firstName}{" "}
+                                      {present.receiver.user.lastName}
                                     </p>
                                     <p className="text-xs text-default-500">
                                       {present.receiver.user.email}
@@ -468,54 +527,78 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Chip size="sm" variant="flat" color="secondary">
-                                    {present.receiver.class?.name || 'No Class'}
+                                  <Chip
+                                    color="secondary"
+                                    size="sm"
+                                    variant="flat"
+                                  >
+                                    {present.receiver.class?.name || "No Class"}
                                   </Chip>
                                 </TableCell>
                                 <TableCell>
-                                  <Chip 
-                                    size="sm" 
-                                    variant="flat"
+                                  <Chip
                                     color={
-                                      present.status === 'DELIVERED' ? 'success' :
-                                      present.status === 'SUBMITTED' ? 'warning' : 'default'
+                                      present.status === "DELIVERED"
+                                        ? "success"
+                                        : present.status === "SUBMITTED"
+                                          ? "warning"
+                                          : "default"
                                     }
+                                    size="sm"
+                                    variant="flat"
                                   >
-                                    {present.status === 'DELIVERED' ? 'Delivered' :
-                                     present.status === 'SUBMITTED' ? 'Submitted' : 'Pending'}
+                                    {present.status === "DELIVERED"
+                                      ? "Delivered"
+                                      : present.status === "SUBMITTED"
+                                        ? "Submitted"
+                                        : "Pending"}
                                   </Chip>
                                 </TableCell>
                                 <TableCell>
                                   <p className="text-xs text-default-500 max-w-32 truncate">
-                                    {present.description || 'No description'}
+                                    {present.description || "No description"}
                                   </p>
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex gap-1">
-                                    {present.status === 'NOT_SUBMITTED' && (
+                                    {present.status === "NOT_SUBMITTED" && (
                                       <Button
-                                        size="sm"
                                         color="warning"
-                                        variant="flat"
-                                        onPress={() => handleMarkPresent('mark_submitted', present.giver.id)}
                                         isLoading={loading}
+                                        size="sm"
+                                        variant="flat"
+                                        onPress={() =>
+                                          handleMarkPresent(
+                                            "mark_submitted",
+                                            present.giver.id,
+                                          )
+                                        }
                                       >
                                         Mark Submitted
                                       </Button>
                                     )}
-                                    {present.status === 'SUBMITTED' && (
+                                    {present.status === "SUBMITTED" && (
                                       <Button
-                                        size="sm"
                                         color="success"
-                                        variant="flat"
-                                        onPress={() => handleMarkPresent('mark_delivered', present.giver.id)}
                                         isLoading={loading}
+                                        size="sm"
+                                        variant="flat"
+                                        onPress={() =>
+                                          handleMarkPresent(
+                                            "mark_delivered",
+                                            present.giver.id,
+                                          )
+                                        }
                                       >
                                         Mark Delivered
                                       </Button>
                                     )}
-                                    {present.status === 'DELIVERED' && (
-                                      <Chip size="sm" color="success" variant="flat">
+                                    {present.status === "DELIVERED" && (
+                                      <Chip
+                                        color="success"
+                                        size="sm"
+                                        variant="flat"
+                                      >
                                         ✓ Complete
                                       </Chip>
                                     )}
@@ -536,40 +619,47 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
               <div className="mt-4">
                 <Card>
                   <CardHeader className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Assignment Overview</h3>
-                    {assignmentsData?.assignments && assignmentsData.assignments.length === 0 && (
-                      <Button
-                        color="primary"
-                        onPress={handleCreateAssignments}
-                        isLoading={loading}
-                      >
-                        Create Assignments
-                      </Button>
-                    )}
+                    <h3 className="text-lg font-semibold">
+                      Assignment Overview
+                    </h3>
+                    {assignmentsData?.assignments &&
+                      assignmentsData.assignments.length === 0 && (
+                        <Button
+                          color="primary"
+                          isLoading={loading}
+                          onPress={handleCreateAssignments}
+                        >
+                          Create Assignments
+                        </Button>
+                      )}
                   </CardHeader>
                   <CardBody>
                     {!assignmentsData?.event ? (
                       <div className="text-center py-8">
                         <p className="text-default-500 mb-4">
-                          No active event found. Please create and activate an event first.
+                          No active event found. Please create and activate an
+                          event first.
                         </p>
                       </div>
-                    ) : assignmentsData.assignments && assignmentsData.assignments.length > 0 ? (
+                    ) : assignmentsData.assignments &&
+                      assignmentsData.assignments.length > 0 ? (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between mb-4">
                           <div>
                             <p className="text-sm text-default-600">
-                              <strong>Event:</strong> {assignmentsData.event.name}
+                              <strong>Event:</strong>{" "}
+                              {assignmentsData.event.name}
                             </p>
                             <p className="text-sm text-default-500">
-                              {assignmentsData.assignments.length} assignments created
+                              {assignmentsData.assignments.length} assignments
+                              created
                             </p>
                           </div>
                           <Chip color="success" variant="flat">
                             Assignments Active
                           </Chip>
                         </div>
-                        
+
                         <Table aria-label="Secret Santa Assignments">
                           <TableHeader>
                             <TableColumn>Giver</TableColumn>
@@ -580,72 +670,112 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                             <TableColumn>Status</TableColumn>
                           </TableHeader>
                           <TableBody>
-                            {assignmentsData.assignments.map((assignment: any) => (
-                              <TableRow key={assignment.id}>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">
-                                      {assignment.giver.user.firstName} {assignment.giver.user.lastName}
-                                    </p>
-                                    <p className="text-xs text-default-500">
-                                      {assignment.giver.user.email}
-                                    </p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Chip size="sm" variant="flat" color="primary">
-                                    {assignment.giver.class?.name || 'No Class'}
-                                  </Chip>
-                                </TableCell>
-                                <TableCell>
-                                  <span className="text-2xl">→</span>
-                                </TableCell>
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium">
-                                      {assignment.receiver.user.firstName} {assignment.receiver.user.lastName}
-                                    </p>
-                                    <p className="text-xs text-default-500">
-                                      {assignment.receiver.user.email}
-                                    </p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Chip size="sm" variant="flat" color="secondary">
-                                    {assignment.receiver.class?.name || 'No Class'}
-                                  </Chip>
-                                </TableCell>
-                                <TableCell>
-                                  <Chip 
-                                    size="sm" 
-                                    color={assignment.giver.status === 'GIFT_SUBMITTED' ? 'success' : 'warning'}
-                                    variant="flat"
-                                  >
-                                    {assignment.giver.status === 'GIFT_SUBMITTED' ? 'Gift Submitted' : 'Pending'}
-                                  </Chip>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                            {assignmentsData.assignments.map(
+                              (assignment: any) => (
+                                <TableRow key={assignment.id}>
+                                  <TableCell>
+                                    <div>
+                                      <p className="font-medium">
+                                        {assignment.giver.user.firstName}{" "}
+                                        {assignment.giver.user.lastName}
+                                      </p>
+                                      <p className="text-xs text-default-500">
+                                        {assignment.giver.user.email}
+                                      </p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      color="primary"
+                                      size="sm"
+                                      variant="flat"
+                                    >
+                                      {assignment.giver.class?.name ||
+                                        "No Class"}
+                                    </Chip>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-2xl">→</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="font-medium">
+                                        {assignment.receiver.user.firstName}{" "}
+                                        {assignment.receiver.user.lastName}
+                                      </p>
+                                      <p className="text-xs text-default-500">
+                                        {assignment.receiver.user.email}
+                                      </p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      color="secondary"
+                                      size="sm"
+                                      variant="flat"
+                                    >
+                                      {assignment.receiver.class?.name ||
+                                        "No Class"}
+                                    </Chip>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      color={
+                                        assignment.giver.status ===
+                                        "GIFT_SUBMITTED"
+                                          ? "success"
+                                          : "warning"
+                                      }
+                                      size="sm"
+                                      variant="flat"
+                                    >
+                                      {assignment.giver.status ===
+                                      "GIFT_SUBMITTED"
+                                        ? "Gift Submitted"
+                                        : "Pending"}
+                                    </Chip>
+                                  </TableCell>
+                                </TableRow>
+                              ),
+                            )}
                           </TableBody>
                         </Table>
 
                         <div className="mt-6 p-4 bg-default-50 rounded-lg">
-                          <h4 className="font-semibold mb-2">Assignment Summary</h4>
+                          <h4 className="font-semibold mb-2">
+                            Assignment Summary
+                          </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div>
-                              <p className="text-default-600">Total Assignments:</p>
-                              <p className="font-semibold text-lg">{assignmentsData.assignments.length}</p>
+                              <p className="text-default-600">
+                                Total Assignments:
+                              </p>
+                              <p className="font-semibold text-lg">
+                                {assignmentsData.assignments.length}
+                              </p>
                             </div>
                             <div>
-                              <p className="text-default-600">Gifts Submitted:</p>
+                              <p className="text-default-600">
+                                Gifts Submitted:
+                              </p>
                               <p className="font-semibold text-lg text-success">
-                                {assignmentsData.assignments.filter((a: any) => a.giver.status === 'GIFT_SUBMITTED').length}
+                                {
+                                  assignmentsData.assignments.filter(
+                                    (a: any) =>
+                                      a.giver.status === "GIFT_SUBMITTED",
+                                  ).length
+                                }
                               </p>
                             </div>
                             <div>
                               <p className="text-default-600">Pending Gifts:</p>
                               <p className="font-semibold text-lg text-warning">
-                                {assignmentsData.assignments.filter((a: any) => a.giver.status !== 'GIFT_SUBMITTED').length}
+                                {
+                                  assignmentsData.assignments.filter(
+                                    (a: any) =>
+                                      a.giver.status !== "GIFT_SUBMITTED",
+                                  ).length
+                                }
                               </p>
                             </div>
                           </div>
@@ -654,15 +784,17 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                     ) : (
                       <div className="text-center py-8">
                         <p className="text-default-500 mb-4">
-                          No assignments have been created yet for the current event.
+                          No assignments have been created yet for the current
+                          event.
                         </p>
                         <p className="text-sm text-default-400 mb-6">
-                          Create assignments to start the Secret Santa gift exchange!
+                          Create assignments to start the Secret Santa gift
+                          exchange!
                         </p>
                         <Button
                           color="primary"
-                          onPress={handleCreateAssignments}
                           isLoading={loading}
+                          onPress={handleCreateAssignments}
                         >
                           Create Assignments
                         </Button>
@@ -677,4 +809,4 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
       </Card>
     </div>
   );
-} 
+}
