@@ -5,6 +5,9 @@ import {
 
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import ParticipantsTable from "./participants-table";
+import ClassesTable from "./classes-table";
+import EmailButton from "./emailButton";
 
 export default async function Home() {
   const user = await getCurrentUser()
@@ -35,14 +38,10 @@ export default async function Home() {
         </CardBody>
       </Card>
       <Card>
-      <CardBody className="p-6">
-        <h2 className="text-xl font-bold mb-4">Registered Users</h2>
-        {allUsers.map((user) => (
-          <p key={user.id} className="text-default-500">
-            {user.firstName}
-          </p>
-        ))}
-      </CardBody>
+        <ParticipantsTable />
+      </Card>
+      <Card>
+        <ClassesTable />
       </Card>
     </div>
   )
