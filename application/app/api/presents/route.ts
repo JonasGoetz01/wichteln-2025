@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from '@clerk/nextjs/server';
 import { getCurrentUser } from "@/lib/auth";
-import { isUserAdmin } from "@/lib/event-utils";
+import { isUserAdmin, getCurrentEvent } from "@/lib/event-utils";
+import { PresentStatus, ParticipantStatus } from "@prisma/client";
 
 export async function GET(req: Request) {
   await auth.protect();
@@ -13,48 +14,116 @@ export async function GET(req: Request) {
   }
 
   try {
-    const { searchParams } = new URL(req.url);
-    const participantId = searchParams.get("participantId");
+    const isAdmin = await isUserAdmin(user.id);
+    
+    if (isAdmin) {
+      // Admins can see all presents for the current active event
+      const currentEvent = await getCurrentEvent();
+      if (!currentEvent) {
+        return NextResponse.json({ 
+          presents: [], 
+          stats: { totalParticipants: 0, submittedCount: 0, deliveredCount: 0 },
+          message: "No active event found" 
+        });
+      }
 
-    if (await isUserAdmin(user.id)) {
-      // Admins can see all presents
-      const presents = await db.participant.findMany({
+      // Get all presents for the current event with participant and user details
+      const presents = await db.present.findMany({
+        where: {
+          giver: {
+            eventId: currentEvent.id,
+          },
+        },
         include: {
-          user: true,
-          class: true,
+          giver: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          receiver: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              class: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
         orderBy: {
           createdAt: 'desc',
         },
       });
 
-      // Calculate present statistics
-      const totalParticipants = presents.length;
+      // Calculate real present statistics
+      const totalParticipants = await db.participant.count({
+        where: { eventId: currentEvent.id },
+      });
+
+      const submittedCount = presents.filter(p => p.status === PresentStatus.SUBMITTED || p.status === PresentStatus.DELIVERED).length;
+      const deliveredCount = presents.filter(p => p.status === PresentStatus.DELIVERED).length;
+
       const stats = {
         totalParticipants,
-        registeredCount: presents.length,
-        submittedCount: 0, // Placeholder - will be implemented with full schema
-        deliveredCount: 0, // Placeholder - will be implemented with full schema
-        pendingCount: totalParticipants,
+        submittedCount,
+        deliveredCount,
+        pendingCount: totalParticipants - submittedCount,
       };
 
       return NextResponse.json({
         presents,
         stats,
+        event: currentEvent,
         isAdmin: true,
       });
     } else {
-      // Regular users can only see their own present status
-      const participant = await db.participant.findUnique({
-        where: { userId: user.id },
+      // Regular users can see their own present status
+      const currentEvent = await getCurrentEvent();
+      if (!currentEvent) {
+        return NextResponse.json({ 
+          present: null, 
+          message: "No active event found" 
+        });
+      }
+
+      const participant = await db.participant.findFirst({
+        where: { 
+          userId: user.id,
+          eventId: currentEvent.id,
+        },
         include: {
           user: true,
           class: true,
+          presentGiven: true,
+          presentReceived: true,
         },
       });
 
       return NextResponse.json({
         participant,
+        event: currentEvent,
         isAdmin: false,
       });
     }
@@ -74,27 +143,118 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { action, participantId, description } = body;
+    const { action, participantId, presentId, description } = body;
 
     // Only admins can mark presents as submitted/delivered
     if (!(await isUserAdmin(user.id))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // For now, we'll simulate the present tracking
-    // In the full implementation, this will update the Present model
-    
+    let present;
+    let updatedParticipant;
+
     if (action === 'mark_submitted') {
-      // Mark present as submitted
-      return NextResponse.json({ 
-        success: true, 
-        message: "Present marked as submitted!" 
+      // Find the present by giver participant ID
+      present = await db.present.findFirst({
+        where: { giverId: participantId },
+        include: {
+          giver: {
+            include: { user: true },
+          },
+        },
       });
-    } else if (action === 'mark_delivered') {
-      // Mark present as delivered
+
+      if (!present) {
+        return NextResponse.json({ error: "Present not found" }, { status: 404 });
+      }
+
+      // Update present status and timestamp
+      await db.present.update({
+        where: { id: present.id },
+        data: { 
+          status: PresentStatus.SUBMITTED,
+          submittedAt: new Date(),
+          description: description || null,
+        },
+      });
+
+      // Update participant status
+      updatedParticipant = await db.participant.update({
+        where: { id: participantId },
+        data: { status: ParticipantStatus.GIFT_SUBMITTED },
+      });
+
       return NextResponse.json({ 
         success: true, 
-        message: "Present marked as delivered!" 
+        message: `Present from ${present.giver.user.firstName} marked as submitted!`,
+        present,
+        participant: updatedParticipant,
+      });
+
+    } else if (action === 'mark_delivered') {
+      // Find the present by giver participant ID
+      present = await db.present.findFirst({
+        where: { giverId: participantId },
+        include: {
+          giver: {
+            include: { user: true },
+          },
+          receiver: {
+            include: { user: true },
+          },
+        },
+      });
+
+      if (!present) {
+        return NextResponse.json({ error: "Present not found" }, { status: 404 });
+      }
+
+      if (present.status !== PresentStatus.SUBMITTED) {
+        return NextResponse.json({ error: "Present must be submitted before it can be marked as delivered" }, { status: 400 });
+      }
+
+      // Update present status and timestamp
+      await db.present.update({
+        where: { id: present.id },
+        data: { 
+          status: PresentStatus.DELIVERED,
+          deliveredAt: new Date(),
+        },
+      });
+
+      // Update receiver participant status
+      updatedParticipant = await db.participant.update({
+        where: { id: present.receiverId },
+        data: { status: ParticipantStatus.GIFT_DELIVERED },
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        message: `Present delivered to ${present.receiver.user.firstName}!`,
+        present,
+        participant: updatedParticipant,
+      });
+
+    } else if (action === 'update_description') {
+      // Update present description
+      if (!presentId) {
+        return NextResponse.json({ error: "Present ID required" }, { status: 400 });
+      }
+
+      present = await db.present.update({
+        where: { id: presentId },
+        data: { description: description || null },
+        include: {
+          giver: {
+            include: { user: true },
+          },
+        },
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        message: "Present description updated!",
+        present,
       });
     }
 
@@ -119,12 +279,56 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { presentId, status, description } = body;
 
-    // Placeholder for present status update
-    // Will be implemented with full Present model
+    if (!presentId) {
+      return NextResponse.json({ error: "Present ID required" }, { status: 400 });
+    }
+
+    const updateData: any = {};
+    
+    if (status) {
+      updateData.status = status;
+      
+      if (status === PresentStatus.SUBMITTED) {
+        updateData.submittedAt = new Date();
+      } else if (status === PresentStatus.DELIVERED) {
+        updateData.deliveredAt = new Date();
+      }
+    }
+    
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    const present = await db.present.update({
+      where: { id: presentId },
+      data: updateData,
+      include: {
+        giver: {
+          include: { user: true },
+        },
+        receiver: {
+          include: { user: true },
+        },
+      },
+    });
+
+    // Update participant statuses based on present status
+    if (status === PresentStatus.SUBMITTED) {
+      await db.participant.update({
+        where: { id: present.giverId },
+        data: { status: ParticipantStatus.GIFT_SUBMITTED },
+      });
+    } else if (status === PresentStatus.DELIVERED) {
+      await db.participant.update({
+        where: { id: present.receiverId },
+        data: { status: ParticipantStatus.GIFT_DELIVERED },
+      });
+    }
     
     return NextResponse.json({ 
       success: true, 
-      message: `Present status updated to ${status}!` 
+      message: `Present status updated to ${status}!`,
+      present,
     });
   } catch (error: any) {
     console.error('Error updating present status:', error);

@@ -197,38 +197,6 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
         </Card>
       </div>
 
-      {/* Progress Bars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardBody>
-            <h3 className="text-lg font-semibold mb-4">Present Collection Progress</h3>
-            <Progress
-              value={stats.totalParticipants > 0 ? (stats.submittedPresents / stats.totalParticipants) * 100 : 0}
-              color="success"
-              showValueLabel={true}
-              className="mb-2"
-            />
-            <p className="text-sm text-default-500">
-              {stats.submittedPresents || 0} of {stats.totalParticipants || 0} presents collected
-            </p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody>
-            <h3 className="text-lg font-semibold mb-4">Delivery Progress</h3>
-            <Progress
-              value={stats.totalParticipants > 0 ? (stats.deliveredPresents / stats.totalParticipants) * 100 : 0}
-              color="primary"
-              showValueLabel={true}
-              className="mb-2"
-            />
-            <p className="text-sm text-default-500">
-              {stats.deliveredPresents || 0} of {stats.totalParticipants || 0} presents delivered
-            </p>
-          </CardBody>
-        </Card>
-      </div>
-
       {/* Tabs for detailed views */}
       <Card>
         <CardBody>
@@ -334,46 +302,231 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                         <TableColumn>Name</TableColumn>
                         <TableColumn>Email</TableColumn>
                         <TableColumn>Class</TableColumn>
-                        <TableColumn>Actions</TableColumn>
+                        <TableColumn>Status</TableColumn>
                       </TableHeader>
                       <TableBody>
-                        {(presentsData?.presents || []).map((participant: any) => (
-                          <TableRow key={participant.id}>
+                        {(assignmentsData?.assignments || []).map((assignment: any) => (
+                          <TableRow key={assignment.giver.id}>
                             <TableCell>
-                              {participant.user.firstName} {participant.user.lastName}
+                              {assignment.giver.user.firstName} {assignment.giver.user.lastName}
                             </TableCell>
-                            <TableCell>{participant.user.email}</TableCell>
+                            <TableCell>{assignment.giver.user.email}</TableCell>
                             <TableCell>
                               <Chip size="sm" variant="flat">
-                                {participant.class?.name || 'No Class'}
+                                {assignment.giver.class?.name || 'No Class'}
                               </Chip>
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  color="warning"
-                                  variant="flat"
-                                  onPress={() => handleMarkPresent('mark_submitted', participant.id)}
-                                  isLoading={loading}
-                                >
-                                  Mark Submitted
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  color="success"
-                                  variant="flat"
-                                  onPress={() => handleMarkPresent('mark_delivered', participant.id)}
-                                  isLoading={loading}
-                                >
-                                  Mark Delivered
-                                </Button>
-                              </div>
+                              <Chip 
+                                size="sm" 
+                                variant="flat"
+                                color={
+                                  assignment.giver.status === 'GIFT_DELIVERED' ? 'success' :
+                                  assignment.giver.status === 'GIFT_SUBMITTED' ? 'warning' :
+                                  assignment.giver.status === 'ASSIGNED' ? 'primary' : 'default'
+                                }
+                              >
+                                {assignment.giver.status === 'GIFT_DELIVERED' ? 'Gift Delivered' :
+                                 assignment.giver.status === 'GIFT_SUBMITTED' ? 'Gift Submitted' :
+                                 assignment.giver.status === 'ASSIGNED' ? 'Assigned' : 'Registered'}
+                              </Chip>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
+                  </CardBody>
+                </Card>
+              </div>
+            </Tab>
+
+            <Tab key="presents" title="Present Tracking">
+              <div className="mt-4">
+                <Card>
+                  <CardHeader className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-semibold">Present Tracking</h3>
+                      <p className="text-sm text-default-500">
+                        Track gift submission and delivery status
+                      </p>
+                    </div>
+                    {presentsData?.stats && (
+                      <div className="flex gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-semibold text-orange-600">
+                            {presentsData.stats.submittedCount || 0}
+                          </div>
+                          <div className="text-default-500">Submitted</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-semibold text-green-600">
+                            {presentsData.stats.deliveredCount || 0}
+                          </div>
+                          <div className="text-default-500">Delivered</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-semibold text-default-600">
+                            {presentsData.stats.pendingCount || 0}
+                          </div>
+                          <div className="text-default-500">Pending</div>
+                        </div>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardBody>
+                    {!presentsData?.presents || presentsData.presents.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-default-500 mb-4">
+                          {!presentsData?.event ? 
+                            'No active event found.' : 
+                            'No presents found. Create assignments first to start tracking presents.'
+                          }
+                        </p>
+                        {!assignmentsData?.assignments || assignmentsData.assignments.length === 0 ? (
+                          <Button
+                            color="primary"
+                            onPress={handleCreateAssignments}
+                            isLoading={loading}
+                          >
+                            Create Assignments
+                          </Button>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Progress Overview */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          <div className="p-4 bg-orange-50 rounded-lg">
+                            <h4 className="font-semibold text-orange-800 mb-2">Submission Progress</h4>
+                            <Progress
+                              value={presentsData.stats.totalParticipants > 0 ? 
+                                (presentsData.stats.submittedCount / presentsData.stats.totalParticipants) * 100 : 0}
+                              color="warning"
+                              showValueLabel={true}
+                              className="mb-2"
+                            />
+                            <p className="text-sm text-orange-700">
+                              {presentsData.stats.submittedCount} of {presentsData.stats.totalParticipants} submitted
+                            </p>
+                          </div>
+                          <div className="p-4 bg-green-50 rounded-lg">
+                            <h4 className="font-semibold text-green-800 mb-2">Delivery Progress</h4>
+                            <Progress
+                              value={presentsData.stats.totalParticipants > 0 ? 
+                                (presentsData.stats.deliveredCount / presentsData.stats.totalParticipants) * 100 : 0}
+                              color="success"
+                              showValueLabel={true}
+                              className="mb-2"
+                            />
+                            <p className="text-sm text-green-700">
+                              {presentsData.stats.deliveredCount} of {presentsData.stats.totalParticipants} delivered
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Present Tracking Table */}
+                        <Table aria-label="Present tracking">
+                          <TableHeader>
+                            <TableColumn>Giver</TableColumn>
+                            <TableColumn>Class</TableColumn>
+                            <TableColumn>→</TableColumn>
+                            <TableColumn>Receiver</TableColumn>
+                            <TableColumn>Class</TableColumn>
+                            <TableColumn>Status</TableColumn>
+                            <TableColumn>Description</TableColumn>
+                            <TableColumn>Actions</TableColumn>
+                          </TableHeader>
+                          <TableBody>
+                            {presentsData.presents.map((present: any) => (
+                              <TableRow key={present.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">
+                                      {present.giver.user.firstName} {present.giver.user.lastName}
+                                    </p>
+                                    <p className="text-xs text-default-500">
+                                      {present.giver.user.email}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip size="sm" variant="flat" color="primary">
+                                    {present.giver.class?.name || 'No Class'}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-2xl text-default-400">→</span>
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">
+                                      {present.receiver.user.firstName} {present.receiver.user.lastName}
+                                    </p>
+                                    <p className="text-xs text-default-500">
+                                      {present.receiver.user.email}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip size="sm" variant="flat" color="secondary">
+                                    {present.receiver.class?.name || 'No Class'}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    size="sm" 
+                                    variant="flat"
+                                    color={
+                                      present.status === 'DELIVERED' ? 'success' :
+                                      present.status === 'SUBMITTED' ? 'warning' : 'default'
+                                    }
+                                  >
+                                    {present.status === 'DELIVERED' ? 'Delivered' :
+                                     present.status === 'SUBMITTED' ? 'Submitted' : 'Pending'}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <p className="text-xs text-default-500 max-w-32 truncate">
+                                    {present.description || 'No description'}
+                                  </p>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1">
+                                    {present.status === 'NOT_SUBMITTED' && (
+                                      <Button
+                                        size="sm"
+                                        color="warning"
+                                        variant="flat"
+                                        onPress={() => handleMarkPresent('mark_submitted', present.giver.id)}
+                                        isLoading={loading}
+                                      >
+                                        Mark Submitted
+                                      </Button>
+                                    )}
+                                    {present.status === 'SUBMITTED' && (
+                                      <Button
+                                        size="sm"
+                                        color="success"
+                                        variant="flat"
+                                        onPress={() => handleMarkPresent('mark_delivered', present.giver.id)}
+                                        isLoading={loading}
+                                      >
+                                        Mark Delivered
+                                      </Button>
+                                    )}
+                                    {present.status === 'DELIVERED' && (
+                                      <Chip size="sm" color="success" variant="flat">
+                                        ✓ Complete
+                                      </Chip>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
                   </CardBody>
                 </Card>
               </div>

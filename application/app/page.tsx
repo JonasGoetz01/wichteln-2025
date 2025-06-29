@@ -5,8 +5,6 @@ import {
 
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import ParticipantsTable from "./participants-table";
-import ClassesTable from "./classes-table";
 import RegistrationForm from "@/components/registration-form";
 import ClassManager from "@/components/class-manager";
 import AdminDashboard from "@/components/admin-dashboard";
@@ -118,26 +116,6 @@ export default async function Home() {
             </CardBody>
           </Card>
         </>
-      )}
-
-      {/* Additional Information for Everyone */}
-      {(isAdmin || existingParticipant) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardBody className="p-6">
-              <h3 className="text-lg font-semibold mb-4">
-                {isAdmin ? 'Alle Teilnehmer' : 'Andere Teilnehmer'}
-              </h3>
-              <ParticipantsTable />
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Klassen</h3>
-              <ClassesTable />
-            </CardBody>
-          </Card>
-        </div>
       )}
 
       {/* Admin Tools Section - Separate from Main Dashboard */}
