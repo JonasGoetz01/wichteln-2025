@@ -61,26 +61,23 @@ export default function RootLayout({
           )}
         >
           <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-            <div className="relative flex flex-col h-screen">
-              <SignedOut>
-                <AuthPage />
-              </SignedOut>
-              
-              <SignedIn>
-                <Navbar />
-                <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
-                  {children}
-                </main>
-                <footer className="w-full flex items-center justify-center py-3">
-                </footer>
-              </SignedIn>
-              <Analytics />
-              <SpeedInsights />
-            </div>
+            <SignedOut>
+              <AuthPage />
+            </SignedOut>
+            
+            <SignedIn>
+              <Navbar />
+              <main className="container mx-auto max-w-7xl pt-16 px-6">
+                {children}
+              </main>
+              <Footer />
+            </SignedIn>
+
+            <Analytics />
+            <SpeedInsights />
           </Providers>
         </body>
       </html>
-      <Footer />
     </ClerkProvider>  
   );
 }
