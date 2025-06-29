@@ -60,11 +60,13 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
     fetcher
   );
 
-  // Fetch assignments data
+  // Add assignments data fetching
   const { data: assignmentsData, mutate: mutateAssignments } = useSWR(
     '/api/assignments',
     fetcher
   );
+
+
 
   const stats = statsData?.data?.stats || {};
   const chartData = statsData?.data || {};
@@ -84,12 +86,13 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
         body: JSON.stringify({}),
       });
 
-      const result = await response.json();
       if (response.ok) {
-        alert(result.message || 'Assignments created successfully!');
-        mutateAssignments();
+        await mutateStats();
+        await mutateAssignments(); // Refresh assignments data
+        alert('Assignments created successfully!');
       } else {
-        alert(result.error || 'Failed to create assignments');
+        const error = await response.json();
+        alert(error.error || 'Failed to create assignments');
       }
     } catch (error) {
       console.error('Error creating assignments:', error);
@@ -379,14 +382,9 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
             <Tab key="assignments" title="Assignments">
               <div className="mt-4">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Assignment Overview</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <div className="text-center py-8">
-                      <p className="text-default-500 mb-4">
-                        Assignment system will be available once the event is fully configured.
-                      </p>
+                    {assignmentsData?.assignments && assignmentsData.assignments.length === 0 && (
                       <Button
                         color="primary"
                         onPress={handleCreateAssignments}
@@ -394,7 +392,129 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
                       >
                         Create Assignments
                       </Button>
-                    </div>
+                    )}
+                  </CardHeader>
+                  <CardBody>
+                    {!assignmentsData?.event ? (
+                      <div className="text-center py-8">
+                        <p className="text-default-500 mb-4">
+                          No active event found. Please create and activate an event first.
+                        </p>
+                      </div>
+                    ) : assignmentsData.assignments && assignmentsData.assignments.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="text-sm text-default-600">
+                              <strong>Event:</strong> {assignmentsData.event.name}
+                            </p>
+                            <p className="text-sm text-default-500">
+                              {assignmentsData.assignments.length} assignments created
+                            </p>
+                          </div>
+                          <Chip color="success" variant="flat">
+                            Assignments Active
+                          </Chip>
+                        </div>
+                        
+                        <Table aria-label="Secret Santa Assignments">
+                          <TableHeader>
+                            <TableColumn>Giver</TableColumn>
+                            <TableColumn>Class</TableColumn>
+                            <TableColumn>Arrow</TableColumn>
+                            <TableColumn>Receiver</TableColumn>
+                            <TableColumn>Class</TableColumn>
+                            <TableColumn>Status</TableColumn>
+                          </TableHeader>
+                          <TableBody>
+                            {assignmentsData.assignments.map((assignment: any) => (
+                              <TableRow key={assignment.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">
+                                      {assignment.giver.user.firstName} {assignment.giver.user.lastName}
+                                    </p>
+                                    <p className="text-xs text-default-500">
+                                      {assignment.giver.user.email}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip size="sm" variant="flat" color="primary">
+                                    {assignment.giver.class?.name || 'No Class'}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-2xl">→</span>
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">
+                                      {assignment.receiver.user.firstName} {assignment.receiver.user.lastName}
+                                    </p>
+                                    <p className="text-xs text-default-500">
+                                      {assignment.receiver.user.email}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip size="sm" variant="flat" color="secondary">
+                                    {assignment.receiver.class?.name || 'No Class'}
+                                  </Chip>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    size="sm" 
+                                    color={assignment.giver.status === 'GIFT_SUBMITTED' ? 'success' : 'warning'}
+                                    variant="flat"
+                                  >
+                                    {assignment.giver.status === 'GIFT_SUBMITTED' ? 'Gift Submitted' : 'Pending'}
+                                  </Chip>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+
+                        <div className="mt-6 p-4 bg-default-50 rounded-lg">
+                          <h4 className="font-semibold mb-2">Assignment Summary</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-default-600">Total Assignments:</p>
+                              <p className="font-semibold text-lg">{assignmentsData.assignments.length}</p>
+                            </div>
+                            <div>
+                              <p className="text-default-600">Gifts Submitted:</p>
+                              <p className="font-semibold text-lg text-success">
+                                {assignmentsData.assignments.filter((a: any) => a.giver.status === 'GIFT_SUBMITTED').length}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-default-600">Pending Gifts:</p>
+                              <p className="font-semibold text-lg text-warning">
+                                {assignmentsData.assignments.filter((a: any) => a.giver.status !== 'GIFT_SUBMITTED').length}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-default-500 mb-4">
+                          No assignments have been created yet for the current event.
+                        </p>
+                        <p className="text-sm text-default-400 mb-6">
+                          Create assignments to start the Secret Santa gift exchange!
+                        </p>
+                        <Button
+                          color="primary"
+                          onPress={handleCreateAssignments}
+                          isLoading={loading}
+                        >
+                          Create Assignments
+                        </Button>
+                      </div>
+                    )}
                   </CardBody>
                 </Card>
               </div>
