@@ -44,9 +44,9 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
     );
   }
 
-  const assignment = assignmentData?.userAssignment;
+  const assignment = assignmentData?.assignment;
 
-  if (!assignment) {
+  if (!assignment || !assignment.givingAssignment) {
     return (
       <Card className={className}>
         <CardBody className="text-center py-8">
@@ -66,7 +66,7 @@ export default function AssignmentView({ className }: AssignmentViewProps) {
     );
   }
 
-  const recipient = assignment.receiver;
+  const recipient = assignment.givingAssignment.receiver;
 
   return (
     <Card className={className}>
