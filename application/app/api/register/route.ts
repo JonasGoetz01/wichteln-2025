@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { classId } = body;
+    const { classId, interests } = body;
 
     // Validate that the class exists
     const classExists = await db.class.findUnique({
@@ -58,17 +58,17 @@ export async function POST(req: Request) {
         data: {
           classId,
           eventId: event.id,
+          interests: interests || null, // Store interests or null if empty
         },
         include: {
           user: true,
           class: true,
-          event: true,
         },
       });
       return NextResponse.json({ 
         success: true, 
         data: updatedParticipant,
-        message: "Registration updated successfully!" 
+        message: "Registrierung erfolgreich aktualisiert!" 
       });
     } else {
       // Create new participant
@@ -77,17 +77,17 @@ export async function POST(req: Request) {
           userId: user.id,
           classId,
           eventId: event.id,
+          interests: interests || null, // Store interests or null if empty
         },
         include: {
           user: true,
           class: true,
-          event: true,
         },
       });
       return NextResponse.json({ 
         success: true, 
         data: participant,
-        message: "Registration successful!" 
+        message: "Registrierung erfolgreich!" 
       });
     }
   } catch (error) {

@@ -8,6 +8,7 @@ import {
   Button,
   Select,
   SelectItem,
+  Textarea,
 } from '@heroui/react';
 import useSWR from 'swr';
 import { useRouter } from 'next/navigation';
@@ -19,6 +20,7 @@ export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     classId: '',
+    interests: '',
   });
 
   // Fetch available classes
@@ -88,6 +90,29 @@ export default function RegistrationForm() {
               </SelectItem>
             ))}
           </Select>
+
+          <Textarea
+            label="Interessen & Geschenkwünsche"
+            placeholder="Beschreibe deine Hobbys, Interessen oder Geschenkideen... (optional)"
+            description="Hilf deinem Wichtel bei der Geschenkauswahl! Z.B. Bücher, Sport, Musik, Süßigkeiten, etc."
+            value={formData.interests}
+            onValueChange={(value) => {
+              setFormData({ ...formData, interests: value });
+            }}
+            minRows={3}
+            maxRows={6}
+            className="w-full"
+          />
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 text-sm">💡</span>
+              <div className="text-xs text-blue-600 dark:text-blue-300">
+                <p className="font-medium mb-1">Tipp für bessere Geschenke:</p>
+                <p>Erwähne deine Hobbys, Lieblingssachen oder was du gerne magst. So kann dein Wichtel das perfekte Geschenk für dich finden!</p>
+              </div>
+            </div>
+          </div>
 
           <Button
             type="submit"
