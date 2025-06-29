@@ -10,15 +10,41 @@ datasource db {
 
 // User model that extends Clerk's user data
 model User {
+  id          String         @id @default(cuid())
+  clerkId     String         @unique
+  email       String         @unique
+  firstName   String?
+  lastName    String?
+  imageUrl    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  participant Participant?
+
+  @@map("users")
+}
+
+model Class {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  participants Participant[]
+
+  @@map("classes")
+}
+
+model Participant {
   id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  imageUrl  String?
+  userId    String   @unique
+  classId   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("users")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class  Class? @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  @@map("participants")
 }
 
