@@ -15,7 +15,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.23.1",
+    "@clerk/nextjs": "^6.23.3",
     "@clerk/themes": "^2.2.52",
     "@heroui/avatar": "^2.2.18",
     "@heroui/button": "2.2.22",
